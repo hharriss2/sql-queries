@@ -24,7 +24,7 @@ with
 	,rs as (
 			select rs1.id, rs1.tool_id, product_name, upc, tool_brand.brand_name,base_upc, sale_date, wm_week, units, sales, 2 as retail_type_id  -- our .com sales
 			from misc_views.retail_sales rs1
-			left join -- logic to find most recent tool_id to brand 
+			left join -- dslogic to find most recent tool_id to brand 
 			(
 				select r2.tool_id, brand_name 
 				from 

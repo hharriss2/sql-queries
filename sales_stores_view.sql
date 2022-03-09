@@ -1,3 +1,4 @@
+
 with 
 	ssa as 
 			(
@@ -11,7 +12,7 @@ with
 			)
 	,wmcbid as 
 			(
-			select distinct item_num, item_id, upc,gtin
+			select distinct item_num, item_id, upc,left(gtin,13) as gtin --gtin has one more number on the end of it than it needs to match to .com upc
 			from wm_catalog2
 			)
 	,model_tool as 
@@ -129,9 +130,8 @@ left join wmcal on wmcal.date = ssa.daily
 left join rt on rt.retail_type_id = ssa.retail_type_id
 left join mv on mv.model_name = pr.model
 left join pnv on pnv.product_name = pr.product_name
-left join wmcbid on wmcbid.item_id = wmc.item_id
-left join rs on  rs.base_upc = wmcbid.gtin
-left join bn on bn.brand_name = rs.brand_name
-left join bid on bid.tool_id = rs.tool_id
-limit 1;
-
+left join wmcbid on wmcbid.item_id = wmc.item_id --wmcbid is same as wm catalog, just trying to find only base id's this time
+left join rs on  rs.base_upc = wmcbid.gtin --base upc on gtin of course
+left join bn on bn.brand_name = rs.brand_name --getting brand name 
+left join bid on bid.tool_id = rs.tool_id --bid id
+;

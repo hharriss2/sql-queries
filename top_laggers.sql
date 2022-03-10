@@ -1,14 +1,5 @@
---select * 
---from misc_views.top_gainers;
---
---CREATE TABLE top_gainer_history (
---    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
---    model text,
---    tool_id text,
---    product_name text,
---    inserted_at timestamp with time zone DEFAULT now()
---);
-create or replace view misc_views.top_laggers as (
+
+
 select tool_id "Tool ID"
 , available "Is Available?"
 ,model "Model"
@@ -87,7 +78,7 @@ from(
 	on c.category_name = cbm.cat
 	left join account_manager a --find accoutn manager
 	on c.am_id = a.account_manager_id -- finally joining int instead of text 
-	left join scrape_data.most_recent_scrape mrs
+	left join scrape_data.most_recent_scrape mrs-- joins scraper to find availability
 	on mrs.item_id::text = model_tool.tool_id
 	where 1=1
 	and( 
@@ -99,7 +90,6 @@ from(
 						)
 			or cat = 'Mattresses'
 		 )--parenthesis say it can be an A item or be a mattress
-	and ((l4_units - l52_units))/(l52_units) < 0--finds percentages only  30% or over
+	and ((l4_units - l52_units))/(l52_units) < 0--finds percentages above 0
 	and model_tool.model is not null
-	)t1 
-	);
+	)t1 ;

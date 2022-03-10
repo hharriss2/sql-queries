@@ -9,12 +9,28 @@
 --    inserted_at timestamp with time zone DEFAULT now()
 --);
 --create or replace view misc_views.top_gainers as (
-select tool_id "Tool ID", model "Model", product_name "Product Name", category_name "Category", account_manager "Account Manager", l4_units "Last 4 Average Units Sold", l52_units "Last 52 Average Units Sold",(l4_52_change::integer || '%') as "Last 4 % Chnage Vs Last 52"
+select tool_id "Tool ID"
+, model "Model"
+, product_name "Product Name"
+, category_name "Category"
+, account_manager "Account Manager"
+, l4_units "Last 4 Average Units Sold"
+, l52_units "Last 52 Average Units Sold"
+,(l4_52_change::integer || '%') as "Last 4 % Chnage Vs Last 52"
 from(
-	select t1.tool_id , model_tool.model , t1.product_name ,c.category_name ,a.account_manager ,l4_units , l52_units ,  (((l4_units - l52_units))/(l52_units)) * 100  l4_52_change 
+	select t1.tool_id 
+	, model_tool.model 
+	, t1.product_name 
+	,c.category_name 
+	,a.account_manager 
+	,l4_units 
+	, l52_units 
+	,  (((l4_units - l52_units))/(l52_units)) * 100  l4_52_change 
 	from 
 	(
-		select tool_id, product_name, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l4_units
+		select tool_id
+		, product_name
+		, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l4_units
 		from misc_views.retail_sales
 		where wm_week in (-- finds the last 4 full weeks of sales
 						select distinct wm_week
@@ -25,11 +41,14 @@ from(
 						limit 4
 						)
 		and units >0
-		group by tool_id, product_name
+		group by tool_id
+		, product_name
 	) t1
 	left join
 	 (
-	select tool_id, product_name, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l52_units
+	select tool_id
+	, product_name
+	, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l52_units
 	from misc_views.retail_sales
 		where wm_week in (-- same as last 4 except with las t52
 				select distinct wm_week
@@ -44,7 +63,8 @@ from(
 	on t1.tool_id = t2.tool_id
 	left join 
 		(
-						select distinct s.model, s.tool_id
+						select distinct s.model
+						, s.tool_id
 					from ( --finds the model's most recent ship date
 						select tool_id, max(date_shipped) as date_compare 
 						from ships_schema.ships

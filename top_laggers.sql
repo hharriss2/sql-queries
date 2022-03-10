@@ -10,7 +10,8 @@
 --);
 create or replace view misc_views.top_laggers as (
 select tool_id "Tool ID"
-, available,model "Model"
+, available "Is Available?"
+,model "Model"
 , product_name "Product Name"
 , category_name "Category"
 , account_manager "Account Manager"
@@ -19,7 +20,9 @@ select tool_id "Tool ID"
 ,(l4_52_change::integer || '%') as "Last 4 % Chnage Vs Last 52"
 from(
 	select t1.tool_id 
-	, mrs.available,model_tool.model 
+	, case when mrs.available = 'TRUE' THEN 'Available' when mrs.available =  'FALSE' then 'Unavailable'
+	else null end as available
+	,model_tool.model 
 	, t1.product_name 
 	,c.category_name 
 	,a.account_manager 

@@ -1,5 +1,3 @@
-
-
 select tool_id "Tool ID"
 , available "Is Available?"
 ,model "Model"
@@ -10,11 +8,11 @@ select tool_id "Tool ID"
 , l52_units "Last 52 Average Units Sold"
 ,(l4_52_change::integer || '%') as "Last 4 % Chnage Vs Last 52"
 from(
-	select t1.tool_id 
+	select distinct  t1.tool_id 
 	, case when mrs.available = 'TRUE' THEN 'Available' when mrs.available =  'FALSE' then 'Unavailable'
 	else null end as available
 	,model_tool.model 
-	, t1.product_name 
+	, p.product_name 
 	,c.category_name 
 	,a.account_manager 
 	,l4_units 
@@ -23,7 +21,6 @@ from(
 	from 
 	(
 		select tool_id
-		, product_name
 		, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l4_units
 		from misc_views.retail_sales
 		where wm_week in (-- finds the last 4 full weeks of sales
@@ -35,12 +32,11 @@ from(
 							limit 4
 						)
 		and units >0
-		group by tool_id, product_name
+		group by tool_id
 	) t1
 	left join
 	 (
 	select tool_id
-	, product_name
 	, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l52_units
 	from misc_views.retail_sales
 		where wm_week in (-- same as last 4 except with las t52
@@ -51,7 +47,7 @@ from(
 				limit 52
 					)
 		and units >0
-		group by tool_id, product_name
+		group by tool_id
 		) t2
 	on t1.tool_id = t2.tool_id
 	left join 
@@ -80,6 +76,7 @@ from(
 	on c.am_id = a.account_manager_id -- finally joining int instead of text 
 	left join scrape_data.most_recent_scrape mrs-- joins scraper to find availability
 	on mrs.item_id::text = model_tool.tool_id
+	left join products_raw p on cbm.model = p.model -- joins pims to find product raws
 	where 1=1
 	and( 
 			t1.tool_id in 

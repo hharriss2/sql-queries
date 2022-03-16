@@ -41,7 +41,7 @@ with
 --								order by wm_week desc
 --								limit 4
 --								 ) then 1
---				when wm_week in (
+--				when wm_wetek in (
 --								select distinct wm_week 
 --								from misc_views.retail_sales
 --								order by wm_week desc

@@ -417,35 +417,40 @@ from ships_schema.ships
 where 1=1
 and model in ('2169259W','2169259WR');
 
-select  product_name, model, division, upc, w_upc, pr_upc, retailer_id_1
+select  product_name, model, division, upc, w_upc, pr_upc
 --model, count(model)
 from
 (
-select distinct product_name, model, division,
+select distinct p.product_name, p.model, p.division,
 						case --case statement chooses upc over base_upc unless upc is missing. 
 						-- wm most likely will have white label upc on item360 so it tried pairing white lables first, then base
 						when w.upc is null then p.upc
-						when p.upc is null then base_upc 
-						else w.upc end as upc, p.upc pr_upc, w.upc w_upc
-						, case when retailer_id = 1 then retailer_id end as retailer_id_1
-						, case when retailer_id = 4 then retailer_id end as retailer_id_4
+						when p.upc is null then p.base_upc
+						when p.base_upc is null then prcom.upc
+						when prcom.upc is null then prcom.base_upc 
+						else w.upc end as upc, p.upc pr_upc, w.upc w_upc, p.retailer_id
 			from products_raw p 
 			left join  (
 						select distinct upc, w.supplier_stock_id
 						from wm_catalog2 w
 						join 
 							(
-							select supplier_stock_id, max(site_end_date) as date_compare -- might need to tweak date compare..l
+							select supplier_stock_id, max(site_start_date) as date_compare1,max(site_end_date) as date_compare2 -- might need to tweak date compare..l
 							from wm_catalog2
 							group by supplier_stock_id
 							) compare_upc
 						on w.supplier_stock_id = compare_upc.supplier_stock_id 
-						where w.site_end_date = compare_upc.date_compare
+						where w.site_end_date = compare_upc.date_compare2
+						and w.site_start_date=  compare_upc.date_compare1
 						) w-- finds most current upc for supplier stock id
 			on p.model = w.supplier_stock_id
+			left join (select model, upc, base_upc
+					   from products_raw
+					   where retailer_id = 4) prcom
+			on p.model = prcom.model
 			where 1=1
-			and retailer_id in(1,4) --only takes into account walmart items
-			and (model in
+			and p.retailer_id = 1 --only takes into account walmart items
+			and (p.model in
 						(
 				select distinct s.model
 				from ( --finds the model's most recent ship date
@@ -459,21 +464,21 @@ select distinct product_name, model, division,
 				and date_shipped = date_compare
 				and s.retailer in ('Walmart.com','Walmart Stores')
 						) -- only including models that have been shipped. 
-				or model in
+				or p.model in
 						(
 						select distinct w.supplier_stock_id
 						from wm_catalog2 w
 						)
 				)						
-			and model not like '%OLD%' -- pims has OLD as their naming convention for obsolete model numbers
+			and p.model not like '%OLD%' -- pims has OLD as their naming convention for obsolete model numbers
 			and product_name not like '%Displ%'
 			) t1 
-			where model = '12312ABL1E'
+			where model = 'WM6940BL'
 --			group by model 
 --			having count(model) >1
 			;
---0004468131327
---00044681313271
+--5997303WCOM
+--WM6940BL
 select * 
 from test_ssa_mat
 order by wm_week desc;
@@ -486,5 +491,5 @@ from wm_catalog2
 where item_id = '734295153');
 
 select * 
-from sales_stores_auto
-where prime_item_nbr = '553814558';
+from sales_stores_auto;
+

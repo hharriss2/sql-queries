@@ -1,0 +1,456 @@
+drop view misc_views.wm_stores_pos;
+create view misc_views.wm_stores_pos as ( 
+select t1.id
+, t1.pos_qty
+, t1.pos_sales
+,t1.daily as sale_date
+,t1.prime_item_nbr
+, w.item_id
+, t1.cat
+, t1.sub_cat
+,t1.division
+, t1.retail_type_id
+, t1.product_name
+, t1.model
+from(
+with 
+    ssa as 
+            (
+            select distinct ssa.id
+            ,case when max(item_num_new) is not null then max(item_num_new) else ssa.prime_item_nbr::integer end as prime_item_nbr
+            /*some itmes are exactly the same w/ a different ship type. this just chooses largest item num*/
+            ,ssa.prime_item_desc
+            ,ssa.item_nbr
+            ,ssa.item_flags
+            ,ssa.item_desc_1
+            ,ssa.upc
+            ,ssa.vendor_stk_nbr
+            ,ssa.vendor_name
+            ,ssa.vendor_nbr
+            ,ssa.vendor_sequence_nbr
+            ,ssa.wm_week
+            ,ssa.daily
+            ,ssa.unit_retail
+            ,ssa.avg_retail
+            ,ssa.pos_qty
+            ,ssa.pos_sales
+            ,1 as retail_type_id
+            from sales_stores_auto ssa
+            left join  (
+            			select distinct w.supplier_stock_id ,w.item_num
+            			from wm_catalog2 w 
+            			) og_item_num
+            on ssa.item_nbr = og_item_num.item_num
+            left join                  
+                (
+                    select distinct w.upc
+                                    , w.supplier_stock_id
+                                    , item_id
+                                    , w.item_num as item_num_new
+                                    , compare_item_num as item_num_old
+                    from wm_catalog2 w
+                    join 
+                        (
+                        select supplier_stock_id
+                        ,max(last_changed_date) as date_compare3
+                        , max(site_start_date) as date_compare1
+                        ,max(site_end_date) as date_compare2 -- might need to tweak date compare..l
+                        from wm_catalog2
+                        group by supplier_stock_id
+                        ) compare_upc
+                    on w.supplier_stock_id = compare_upc.supplier_stock_id 
+                    join (
+                          select distinct item_num, upc 
+                          from wm_catalog2
+                            ) compare_item_num
+                    on compare_item_num.upc = w.upc
+                    where w.site_end_date = compare_upc.date_compare2
+                    and w.site_start_date=  compare_upc.date_compare1
+                    and w.last_changed_date = compare_upc.date_compare3
+                )w
+            on og_item_num.supplier_stock_id = w.supplier_stock_id
+            where fineline_description !='DOTCOM ONLY' -- does not pull in .com pos data
+            group by ssa.id
+            ,ssa.prime_item_desc
+            ,ssa.item_nbr
+            ,ssa.item_flags
+            ,ssa.item_desc_1
+            ,ssa.upc
+            ,ssa.vendor_stk_nbr
+            ,ssa.vendor_name
+            ,ssa.vendor_nbr
+            ,ssa.vendor_sequence_nbr
+            ,ssa.wm_week
+            ,ssa.daily
+            ,ssa.unit_retail
+            ,ssa.avg_retail
+            ,ssa.pos_qty
+            ,ssa.pos_sales
+            ,1
+            )
+--          implimenting wmc in pr
+    ,wmc as 
+            (
+            select item_num, item_id, upc,left(gtin,13) as gtin
+            from wm_catalog2
+            )
+    ,wmcbid as 
+            (
+            select distinct item_id, upc,left(gtin,13) as gtin
+            from wm_catalog2
+            )
+    ,model_tool as 
+            (
+                select distinct s.model, tool_id, s.division, date_compare
+                from ( --finds the model's most recent ship date
+                    select model, max(date_shipped) as date_compare 
+                    from ships_schema.ships
+                    group by model
+                    ) ship_model
+                join ships_schema.ships s  
+                on s.model = ship_model.model --compares max ship date to get a model tool id relation 
+                where 1=1
+                and date_shipped = date_compare
+                --and tool_id is not null /*from og tool id to model formula. it will not give all of the distinct models for upc if added in*/
+                and s.retailer in ('Walmart.com','Walmart Stores')
+                and tool_id !='0'
+            )
+    ,d as
+            (
+            select * 
+            from power_bi.divisions_view
+            )
+    , cbm as 
+            (
+            select * 
+            from cat_by_model 
+            )
+    , tv as 
+            (
+            select * 
+            from power_bi.tool_id_view
+            )
+    , pr as (
+--start pr
+ select distinct item_num
+--              , w.item_id
+                ,case when model_tool.tool_id is not null then model_tool.tool_id
+                else w.item_id end  as item_id
+                ,case when model_tool.model is not null then model_tool.model
+                else p.model end as model
+                ,p.product_name
+--              , p.model
+                , p.division
+                ,p.retailer_id
+                ,
+                        case --case statement chooses upc over base_upc unless upc is missing. 
+                        -- wm most likely will have white label upc on item360 so it tried pairing white lables first, then base
+                        When w.upc is not null then w.upc
+                        when w.upc is null then p.upc
+                        when p.upc is null then p.base_upc
+                        when p.base_upc is null then prcom.upc
+                        when prcom.upc is null then prcom.base_upc 
+                        else w.upc end as upc
+            from products_raw p 
+            left join  (
+                        select distinct upc, w.supplier_stock_id, item_id, item_num
+                        from wm_catalog2 w
+                        join 
+                            (
+                            select supplier_stock_id
+                            ,max(last_changed_date) as date_compare3
+                            , max(site_start_date) as date_compare1
+                            ,max(site_end_date) as date_compare2 -- might need to tweak date compare..l
+                            from wm_catalog2
+                            group by supplier_stock_id
+                            ) compare_upc
+                        on w.supplier_stock_id = compare_upc.supplier_stock_id 
+                        where w.site_end_date = compare_upc.date_compare2
+                        and w.site_start_date=  compare_upc.date_compare1
+                        and w.last_changed_date = compare_upc.date_compare3
+                        ) w-- finds most current upc for supplier stock id
+--          on p.model = w.supplier_stock_id
+            on p.upc = w.upc
+            left join (
+                       select model, upc, base_upc
+                       from products_raw
+                       where retailer_id = 4
+                       ) prcom
+            on p.model = prcom.model
+            left join (
+		                select distinct s.model, tool_id, s.division,s.upc, date_compare
+		                from ( --finds the model's most recent ship date
+		                    select model, max(date_shipped) as date_compare 
+		                    from ships_schema.ships
+		                    group by model
+		                    ) ship_model
+		                join ships_schema.ships s  
+		                on s.model = ship_model.model --compares max ship date to get a model tool id relation 
+		                where 1=1
+		                and date_shipped = date_compare
+		                --and tool_id is not null /*from og tool id to model formula. it will not give all of the distinct models for upc if added in*/
+		                and s.retailer in ('Walmart.com','Walmart Stores')
+		                and tool_id !='0'
+            		  ) model_tool
+            on model_tool.model = p.model
+            where 1=1
+            and p.retailer_id = 1 --only takes into account walmart items
+            and (
+            	  p.model in
+                        (
+			                select distinct s.model
+			                from ( --finds the model's most recent ship date
+			                    select upc, max(date_shipped) as date_compare 
+			                    from ships_schema.ships
+			                    group by upc
+			                    ) ship_model
+			                join ships_schema.ships s  
+			                on s.upc = ship_model.upc --compares max ship date to get a model tool id relation 
+			                where 1=1
+			                and date_shipped = date_compare
+			                and s.retailer in ('Walmart.com','Walmart Stores')
+                        ) -- only including models that have been shipped. 
+                or p.model in
+                        (
+	                        select distinct w.supplier_stock_id
+	                        from wm_catalog2 w
+	                        where supplier_stock_id !='WM3921E'
+	                        /*WM3921E,5997015WCOM,5997303WCOM,WM6940BL,WM6940W*/
+	                        /*BANDAID FIX FOR THE DUPLICATING MODELS IN THIS*/
+                        )
+                )                       
+            and p.model not like '%OLD%' -- pims has OLD as their naming convention for obsolete model numbers
+            and product_name not like '%Displ%'
+--end pr
+            )
+    ,pnv as (
+            select * 
+            from power_bi.product_name_view_pbix
+            )
+    ,rs as 
+            (
+            select distinct rs1.tool_id
+            , tool_brand.brand_name
+            ,upc
+            ,r3.base_upc
+            from misc_views.retail_sales rs1
+            left join -- logic to find most recent tool_id to brand 
+            (
+                select r2.tool_id, brand_name 
+                from 
+                    (
+                    select distinct tool_id, brand_name, max(sale_date) as date_compare
+                    from misc_views.retail_sales
+                    where brand_name is not null
+                    group by tool_id, brand_name
+                    ) r1 -- r1 finds the max date the brand name and item were sold together
+                    right join (
+                        select tool_id, max(sale_date) as date_compare 
+                        from misc_views.retail_sales r2
+                        where brand_name is not null
+                        group by tool_id
+                     ) r2 --r2 finds the max sale date of that item where the brand name is not null
+                    on r1.tool_id = r2.tool_id -- join items on iem id 
+                    where r1.date_compare = r2.date_compare --set conditional to take max date item was shipped (r2 item_id) 
+            ) tool_brand
+             on tool_brand.tool_id= rs1.tool_id
+            left join -- finds max tool id base upc combo. use this r3 base upc as default upc for rs 
+                    (
+                    select distinct tool_id, base_upc
+                    from
+                        (
+                        select t1.tool_id, base_upc
+                        from
+                            (
+                            select tool_id, max(sale_date)  as date_compare--find max date tool is is sold
+                            from misc_views.retail_sales
+                            group by tool_id
+                            ) t1
+                        join misc_views.retail_sales t2
+                        on t1.tool_id = t2.tool_id 
+                        where t1.date_compare = t2.sale_date
+                        ) tool_base-- a table for getting most recent tool id base id 
+                    ) r3
+                    on r3.tool_id = rs1.tool_id
+             
+            )
+    ,c as 
+            (
+            select * 
+            from power_bi.category_view
+            )
+    ,scv as 
+            (
+            select * 
+            from power_bi.sub_category_view
+            )
+    ,bid as 
+            (
+            select * 
+            from power_bi.tool_id_view
+            )
+    ,wmcal as 
+            (
+            select * 
+            from power_bi.wm_calendar_view
+            )
+    ,bn as (
+            select * 
+            from power_bi.brand_name
+            )
+    , rt as (
+            select * 
+            from power_bi.retail_type
+            )
+    , g as 
+            (
+            select * 
+            from power_bi.group_id_view
+            )
+    , mv as 
+            (
+            select * 
+            from power_bi.model_view_pbix
+            )
+    ,rsbid as 
+            (
+            select distinct upc, base_upc, tool_id 
+            from misc_views.retail_sales
+            where upc = base_upc
+            )
+select   ssa.id
+--      ,mv.model_name
+--      ,mv.model_id
+--      ,d.division_id
+--      ,tv.tool_id_id
+--      ,tv.tool_id
+--      ,pnv.product_name_id
+--      ,g.group_id_id
+--      ,c.category_id
+--      ,bid.tool_id_id as base_id_id
+--      ,wmcal.wmcal_id, bn.brand_id
+--      ,rt.retail_type_id
+        ,pos_qty
+        ,ssa.pos_sales
+        ,ssa.daily
+        ,ssa.prime_item_nbr
+--      ,wmc.item_num
+        --temporary columns--
+        ,pr.item_id
+        ,cbm.cat
+        ,cbm.sub_cat
+        ,pr.division
+        ,ssa.retail_type_id
+        ,pr.product_name
+        ,pr.model
+from ssa 
+/*left join wmc on ssa.prime_item_nbr = wmc.item_num::text -- gets item id based off item numbers from store to 360*/
+left join pr on ssa.prime_item_nbr = pr.item_num--::text -- switching out wmc to ssa 
+--left join pr on wmc.upc = pr.upc -- gets upc with 360 data. joins pims data 
+--left join model_tool on model_tool.model = pr.model -- joins model to ships models to get division
+--left join cbm on model_tool.model = cbm.model -- gets category 
+left join cbm on cbm.model = pr.model
+--left join rs on tv.tool_id = rs.tool_id
+left join rs on pr.item_id = rs.tool_id
+left join wmcbid on wmcbid.gtin = rs.base_upc 
+left join bid on bid.tool_id = wmcbid.item_id
+left join bn on bn.brand_name = rs.brand_name
+--left join tv on tv.tool_id = pr.item_id-- tool id dim
+--left join g on g.tool_id::text = tv.tool_id-- group id dim
+--left join c on c.category_name = cbm.cat-- gets cat dim
+--left join scv on cbm.sub_cat = scv.sub_cat_name-- gets sub cat dim
+--left join wmcal on wmcal.date = ssa.daily-- gets calendar dim
+----left join d on model_tool.division = d.division_name --division dim
+--left join d on pr.division = d.division_name --get division dim other way
+--left join rt on rt.retail_type_id = ssa.retail_type_id -- gets retail type dim
+--left join mv on mv.model_name = pr.model-- gets model dim
+--left join pnv on pnv.product_name = pr.product_name -- gets product name dim
+) t1
+join wm_catalog2 w
+on t1.prime_item_nbr = w.item_num)
+;
+create view power_bi.wm_stores_pos_fact as (
+with 
+    ssa as 
+            (
+				select * 
+				from misc_views.wm_stores_pos
+            )
+    ,d as
+            (
+            select * 
+            from power_bi.divisions_view
+            )
+    , tv as 
+            (
+            select * 
+            from power_bi.tool_id_view
+            )
+    ,pnv as (
+            select * 
+            from power_bi.product_name_view_pbix
+            )
+    ,c as 
+            (
+            select * 
+            from power_bi.category_view
+            )
+    ,scv as 
+            (
+            select * 
+            from power_bi.sub_category_view
+            )
+    ,bid as 
+            (
+            select * 
+            from power_bi.tool_id_view
+            )
+    ,wmcal as 
+            (
+            select * 
+            from power_bi.wm_calendar_view
+            )
+    ,bn as (
+            select * 
+            from power_bi.brand_name
+            )
+    , rt as (
+            select * 
+            from power_bi.retail_type
+            )
+    , g as 
+            (
+            select * 
+            from power_bi.group_id_view
+            )
+    , mv as 
+            (
+            select * 
+            from power_bi.model_view_pbix
+            )
+select ssa.id
+, ssa.pos_qty
+, ssa.pos_sales
+, wmcal.wmcal_id
+, tv.tool_id_id
+, c.category_id
+,ssa.cat
+, scv.sub_cat_id
+,d.division_id
+, rt.retail_type_id
+, pnv.product_name_id
+, mv.model_id
+from ssa
+left join tv on tv.tool_id = ssa.item_id-- tool id dim
+left join g on g.tool_id::text = tv.tool_id-- group id dim
+left join c on c.category_name = ssa.cat-- gets cat dim
+left join scv on scv.sub_cat_name = ssa.sub_cat-- gets sub cat dim
+left join wmcal on wmcal.date = ssa.sale_date-- gets calendar dim
+--left join d on model_tool.division = d.division_name --division dim
+left join d on d.division_name= ssa.division --get division dim other way
+left join rt on ssa.retail_type_id = rt.retail_type_id -- gets retail type dim
+left join mv on mv.model_name = ssa.model-- gets model dim
+left join pnv on pnv.product_name = ssa.product_name -- gets product name dim
+)
+;
+

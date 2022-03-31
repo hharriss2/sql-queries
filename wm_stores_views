@@ -458,6 +458,7 @@ select  distinct ssa.id
                 WHEN pr.product_name IS NOT NULL THEN pr.product_name
                 ELSE ssa.prime_item_desc
         END AS product_name
+        /*start store lookup heirarchy. in case of no brand/model link or needing to prioritize a model/ brand, store lookup table is used.*/
         ,CASE
                 WHEN sl.model IS NOT NULL THEN sl.model
                 ELSE pr.model

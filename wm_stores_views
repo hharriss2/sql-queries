@@ -427,6 +427,10 @@ select distinct item_num
             from misc_views.retail_sales
             where upc = base_upc
             )
+     ,sl as (
+            select * 
+            from stores_lookup 
+            )
 select  distinct ssa.id
 --      ,mv.model_name
 --      ,mv.model_id
@@ -450,8 +454,18 @@ select  distinct ssa.id
         ,cbm.sub_cat
         ,pr.division
         ,ssa.retail_type_id
-        ,pr.product_name
-        ,pr.model
+        ,CASE
+                WHEN pr.product_name IS NOT NULL THEN pr.product_name
+                ELSE ssa.prime_item_desc
+        END AS product_name
+        ,CASE
+                WHEN sl.model IS NOT NULL THEN sl.model
+                ELSE pr.model
+        END AS model
+        ,CASE
+                WHEN sl.brand_name IS NOT NULL THEN sl.brand_name
+                ELSE rs.brand_name
+        END AS brand_name
 from ssa 
 /*left join wmc on ssa.prime_item_nbr = wmc.item_num::text -- gets item id based off item numbers from store to 360*/
 left join pr on ssa.prime_item_nbr = pr.item_num--::text -- switching out wmc to ssa 

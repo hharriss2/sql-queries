@@ -2,16 +2,16 @@ create  view misc_views.wm_stores_pos as (
 select t1.id,
     t1.pos_qty,
     t1.pos_sales,
+    t1.curr_repl_instock,
     t1.daily AS sale_date,
-    t1.prime_item_nbr,
-    w.item_id,
-    t1.cat,
-    t1.sub_cat,
+    w.item_num as item_id,
+    t1.cbm_id,
+    t1.am_id,
     t1.division,
     t1.retail_type_id,
     t1.product_name,
     t1.model::text,
-    t1.prime_item_nbr AS base_id,
+    t1.base_id,
     t1.brand_name
 from(
 with 
@@ -19,10 +19,7 @@ with
           (
 /*##START SSA ##*/
 	select distinct ssa.id
-            ,case when recent_item_num.prime_item_num is not null 
-            		then recent_item_num.prime_item_num 
-            	    else ssa.prime_item_nbr::integer 
-            	  end as prime_item_nbr
+            ,coalesce(recent_item_num.prime_item_num, ssa.prime_item_nbr::integer) as prime_item_nbr
             ,ssa.prime_item_desc
             ,ssa.item_nbr
             ,ssa.item_flags
@@ -38,6 +35,7 @@ with
             ,ssa.avg_retail
             ,ssa.pos_qty
             ,ssa.pos_sales
+            ,ssa.curr_repl_instock
             ,1 as retail_type_id
     from sales_stores_auto ssa
     left JOIN (
@@ -146,12 +144,12 @@ with
 					                and tool_id !='0'
 					                -- end where clasue.
 											) 
-						and item_num !='569020027' --get rid of one anomoly aka MS METAL ARM FUTON
+						and item_num not in ('551606155','551606156','569020027') --get rid of one anomoly aka MS METAL ARM FUTON
 					/*end duplicate lookup */ 
 				) dupe_lookup -- lookup view of the dupes the recent_item_desc couldn't figure out 
 			on dupe_lookup.item_description = w.item_description
 			where date_compare = daily
-			and prime_item_nbr != '569020027'--the one anomoly for now...
+			and prime_item_nbr not in ('551606155','551606156','569020027')--the one anomoly for now...
 			--end most recent item number to description
 			and all_item_nbrs.prime_item_desc not in (
 	      		/*START DUPE OMIT*/
@@ -215,7 +213,7 @@ with
 						                and tool_id !='0'
 						                -- end where clasue.
 												) 
-							and item_num !='569020027' --get rid of one anomoly aka MS METAL ARM FUTON
+							and item_num not in ('551606155','551606156','569020027') --get rid of one anomoly aka MS METAL ARM FUTON
 	--						and item_description not in (select t1.item_description from pos_reporting.lookup_stores t1)
 						/*end duplicate lookup */ ) t2
 						group by item_description
@@ -225,6 +223,23 @@ with
 			) recent_item_num
       on recent_item_num.prime_item_desc = ssa.prime_item_desc
       where fineline_description !='DOTCOM ONLY' -- does not pull in .com pos data
+      group by ssa.id
+      		,coalesce(recent_item_num.prime_item_num, ssa.prime_item_nbr::integer)
+            ,ssa.prime_item_desc
+            ,ssa.item_nbr
+            ,ssa.item_flags
+            ,ssa.item_desc_1
+            ,ssa.upc
+            ,ssa.vendor_stk_nbr
+            ,ssa.vendor_name
+            ,ssa.vendor_nbr
+            ,ssa.vendor_sequence_nbr
+            ,ssa.wm_week
+            ,ssa.daily
+            ,ssa.unit_retail
+            ,ssa.avg_retail
+            ,ssa.pos_qty
+            ,ssa.pos_sales
             
 /*##END SSA ##*/ 
             )
@@ -641,8 +656,14 @@ and p.retailer_id in (1,4) --only takes into account walmart items
             where upc = base_upc
             )
      ,sl as (
-            select * 
-            from pos_reporting.lookup_stores 
+         SELECT t1.prime_item_num,t1.item_id,
+            t1.model,
+            t1.division, t1.brand_name, t1.item_description, t1.current_item_num
+           FROM pos_reporting.lookup_stores t1
+             JOIN ( SELECT lookup_stores.prime_item_num,
+                    max(lookup_stores.date_inserted::date) AS date_compare
+                   FROM pos_reporting.lookup_stores
+                  GROUP BY lookup_stores.prime_item_num) t2 ON t1.prime_item_num = t2.prime_item_num AND t1.date_inserted::date = t2.date_compare 
             )
 select  distinct ssa.id
 --      ,mv.model_name
@@ -658,28 +679,20 @@ select  distinct ssa.id
 --      ,rt.retail_type_id
         ,pos_qty
         ,ssa.pos_sales
+        ,ssa.curr_repl_instock
         ,ssa.daily
-        ,ssa.prime_item_nbr
+        ,coalesce(sl.current_item_num::integer,ssa.prime_item_nbr) as item_id
 --      ,wmc.item_num
         --temporary columns--
-        ,pr.item_id
+        ,coalesce(wmcbid.item_id,sl.item_id::text, pr.item_id) as base_id 
         ,cbm.cat
         ,cbm.sub_cat
-        ,pr.division
+        ,coalesce(sl.division, pr.division)  as division
         ,ssa.retail_type_id
-        ,CASE
-                WHEN pr.product_name IS NOT NULL THEN pr.product_name
-                ELSE ssa.prime_item_desc
-        END AS product_name
+        ,coalesce( sl.item_description,pr.product_name, ssa.prime_item_desc)  as product_name
         /*start store lookup heirarchy. in case of no brand/model link or needing to prioritize a model/ brand, store lookup table is used.*/
-        ,CASE
-                WHEN sl.model IS NOT NULL THEN sl.model
-                ELSE pr.model
-        END AS model
-        ,CASE
-                WHEN sl.brand_name IS NOT NULL THEN sl.brand_name
-                ELSE rs.brand_name
-        END AS brand_name
+        ,coalesce(sl.model, pr.model)  as model
+        ,coalesce(sl.brand_name, rs.brand_name)  as brand_name
 from ssa 
 /*left join wmc on ssa.prime_item_nbr = wmc.item_num::text -- gets item id based off item numbers from store to 360*/
 left join pr on ssa.prime_item_nbr = pr.item_num--::text -- switching out wmc to ssa 
@@ -695,7 +708,7 @@ left join bn on bn.brand_name = rs.brand_name
 left join sl on sl.prime_item_num = ssa.prime_item_nbr
 --left join tv on tv.tool_id = pr.item_id-- tool id dim
 --left join g on g.tool_id::text = tv.tool_id-- group id dim
---left join c on c.category_name = cbm.cat-- gets cat dim
+left join c on c.category_name = cbm.cat-- gets cat dim
 --left join scv on cbm.sub_cat = scv.sub_cat_name-- gets sub cat dim
 --left join wmcal on wmcal.date = ssa.daily-- gets calendar dim
 ----left join d on model_tool.division = d.division_name --division dim
@@ -705,7 +718,7 @@ left join sl on sl.prime_item_num = ssa.prime_item_nbr
 --left join pnv on pnv.product_name = pr.product_name -- gets product name dim
 ) t1
 left join wm_catalog2 w
-on t1.prime_item_nbr = w.item_num)
+on t1.item_id = w.item_num)
 ;
 create view power_bi.wm_stores_pos_fact as (
 with 
@@ -727,16 +740,6 @@ with
     ,pnv as (
             select * 
             from power_bi.product_name_view_pbix
-            )
-    ,c as 
-            (
-            select * 
-            from power_bi.category_view
-            )
-    ,scv as 
-            (
-            select * 
-            from power_bi.sub_category_view
             )
     ,bid as 
             (
@@ -771,15 +774,17 @@ select ssa.id
 , ssa.pos_sales
 , wmcal.wmcal_id
 , tv.tool_id_id
-, c.category_id
-,ssa.cat
-, scv.sub_cat_id
+,ssa.cbm_id,
+,ssa.am_id AS account_manager_id,
 ,d.division_id
 , rt.retail_type_id
 , pnv.product_name_id
 , mv.model_id
+,bn.brand_id
+,g.group_id_id
+,bid.tool_id_id as base_id_id
 from ssa
-left join tv on tv.tool_id = ssa.item_id-- tool id dim
+left join tv on tv.tool_id = ssa.item_id::text-- tool id dim
 left join g on g.tool_id::text = tv.tool_id-- group id dim
 left join c on c.category_name = ssa.cat-- gets cat dim
 left join scv on scv.sub_cat_name = ssa.sub_cat-- gets sub cat dim
@@ -789,6 +794,8 @@ left join d on d.division_name= ssa.division --get division dim other way
 left join rt on ssa.retail_type_id = rt.retail_type_id -- gets retail type dim
 left join mv on mv.model_name = ssa.model-- gets model dim
 left join pnv on pnv.product_name = ssa.product_name -- gets product name dim
+LEFT JOIN bn ON bn.brand_name = ssa.brand_name
+LEFT JOIN bid ON bid.tool_id::text = ssa.base_id::text
 )
 ;
 

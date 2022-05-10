@@ -22,12 +22,12 @@ from(
 	(
 		select tool_id
 		, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l4_units
-		from misc_views.retail_sales
+		from pos_reporting.retail_sales
 		where wm_week in (-- finds the last 4 full weeks of sales
 							select distinct wm_week
-							from misc_views.retail_sales 
+							from pos_reporting.retail_sales 
 							where wm_week != (select max(wm_week)-- filters non full week
-							from misc_views.retail_sales)
+							from pos_reporting.retail_sales)
 							order by wm_week desc
 							limit 4
 						)
@@ -38,11 +38,11 @@ from(
 	 (
 	select tool_id
 	, (sum(units)/count(distinct wm_week)::numeric(10,2))::numeric(10,2) l52_units
-	from misc_views.retail_sales
+	from pos_reporting.retail_sales
 		where wm_week in (-- same as last 4 except with las t52
 				select distinct wm_week
-				from misc_views.retail_sales 
-				where wm_week != (select max(wm_week) from misc_views.retail_sales)
+				from pos_reporting.retail_sales 
+				where wm_week != (select max(wm_week) from pos_reporting.retail_sales)
 				order by wm_week desc
 				limit 52
 					)
@@ -87,6 +87,7 @@ from(
 						)
 			or cat = 'Mattresses'
 		 )--parenthesis say it can be an A item or be a mattress
-	and ((l4_units - l52_units))/(l52_units) < 0--finds percentages above 0
+	and ((l4_units - l52_units))/(l52_units) < -.10--finds percentages above -10%
 	and model_tool.model is not null
-	)t1 ;
+	and t2.l52_units >=15
+	)t1

@@ -34,6 +34,8 @@ select
 	,l4_units_ships
 	,first_purchase_date
 	,l12_units_ships
+	,ship_type
+	,fcast_units_customer
 from
 	(
 		with
@@ -41,88 +43,77 @@ from
 			(
 			-- forecast data 2nd view
 			--different then the first
-			--this one has ty and ny forecasts running down
-		
+			--this one has ty and ny forecasts running dow
 					select 
 					dense_rank() over (order by
-						f.model, forecast_date
+						fa.model, fa.forecast_date
 					) as fcast_id
-					,coalesce(mcl.item_id,f.item_id) as tool_id
-					,f.model
-					,implimentation_code
-					,priority_code
-					,date_part('month', forecast_date)::integer as fcast_month
-					,date_part('year', forecast_date)::integer as fcast_year
+					,coalesce(mcl.item_id,fa.item_id) as tool_id
+					,fa.model
+					,fa.implimentation_code
+					,fa.priority_code
+					,date_part('month', fa.forecast_date)::integer as fcast_month
+					,date_part('year', fa.forecast_date)::integer as fcast_year
 					--write a case statement to get the following:
 					-- we want to get current pos for this month and prior of the year
 					--if month is past current, use last years sale to populate.
 					--this this all the way up to current month next year
 					,case 
-						when date_part('month',forecast_date)::integer <= date_part('month',now())::integer
-							and date_part('year',forecast_date)::integer = date_part('year',now())::integer
+						when date_part('month',fa.forecast_date)::integer <= date_part('month',now())::integer
+							and date_part('year',fa.forecast_date)::integer = date_part('year',now())::integer
 						--when fcast_month is less than or equal to current month, then 1
 					then 1
-						when date_part('month',forecast_date)::integer > date_part('month',now())::integer
-							AND date_part('year', forecast_date)::integer = date_part('year',now())::integer
+						when date_part('month',fa.forecast_date)::integer > date_part('month',now())::integer
+							AND date_part('year', fa.forecast_date)::integer = date_part('year',now())::integer
 						--when fcast_month is greater than current month, next step
 						--when fcast year = current year, then 2
 					then 2
-						when date_part('month',forecast_date)::integer <=date_part('month',now())::integer
+						when date_part('month',fa.forecast_date)::integer <=date_part('month',now())::integer
 					then 3
 					else 4
 						--else 3
 					end as is_month
 					--repeat and rename to join last years to pos
 					,case 
-						when date_part('month',forecast_date)::integer <= date_part('month',now())::integer
+						when date_part('month',fa.forecast_date)::integer <= date_part('month',now())::integer
 					then 1
-						when date_part('month',forecast_date)::integer > date_part('month',now())::integer
-							AND date_part('year', forecast_date)::integer = date_part('year',now())::integer
+						when date_part('month',fa.forecast_date)::integer > date_part('month',now())::integer
+							AND date_part('year',fa. forecast_date)::integer = date_part('year',now())::integer
 					then 2
 					else 3
 					end as is_month_ly
-					,units as fcast_units
+					,fa.units as fcast_units
+					,case --if customer forecast is 0, then use adjusted forecast
+					 when fac.units = 0 then fa.units
+					 else fac.units 
+					 end as fcast_units_customer
 					 --3. case statement to determine forecast year
-				from forecast.forecast_agenda f
+				from forecast.forecast_agenda fa
+				join (
+					  select * 
+					  from forecast.forecast_agenda_customer
+					  where date_inserted::date =(
+					  					select max(date_inserted::date) 
+					  					from forecast.forecast_agenda_customer
+					  							)
+					  ) fac
+				on fa.model = fac.model and fa.forecast_date = fac.forecast_date
 				left join clean_data.com_product_list mcl
-				on f.model = mcl.model
-				where date_inserted::date =(select max(date_inserted::date) from forecast.forecast_agenda)
-				and f.model != '2241009W'--because kevin told me to 
-				--2. finding the most recent forcast data
+				on fa.model = mcl.model
+				where fa.date_inserted::date =(select max(date_inserted::date) from forecast.forecast_agenda)
+				--2. finding the most recent forcast data for adjusted and customer
+				and fa.model != '2241009W'--because kevin told me to 
 				--find current agenda
 				--finds the current forecast
 		
 			)
---		,oh as --dont need since we have SSR on hands
---			(
---			select distinct model
---				,date_part('month', inventory_date)::integer as oh_month
---				,date_part('year', inventory_date)::integer as oh_year
---				,sum(c.qty_on_hand) - sum(c.open_order_qty) as on_hand_qty
---				--calculate actual on hands
---			from forecast.com_on_hand c
---			where warehouse_name !='Montreal Passthrough (ALL)'
---			and warehouse_name !~~'%Direct Import%'
---			and inventory_date = (select max(inventory_date) from forecast.com_on_hand)
---			--only finding current on hands
---			group by 
---				model
---				,date_part('month', inventory_date)::integer
---				,date_part('year', inventory_date)::integer
---			)
 		,pos as
 			(
 			--need pos data to calculate AUR.pulling in item id, date, units, and sales. will calculate AURS in power bi 
 		select model
 			, pos_month
 			, sum(current_units) as current_units
-		--	,sum(past_month_ly_units) as past_month_ly_units
-		--	,sum(current_units_ly) as current_units_ly
-		--	,sum(past_month_last_ly_units) as past_month_last_ly_units
 			,sum(current_sales) as current_sales
-		--	,sum(past_month_ly_sales) as past_month_ly_sales
-		--	,sum(current_sales_ly) as current_sales_ly
-		--	,sum(past_month_last_ly_sales) as past_month_last_ly_sales
 			,sum(total_units_ly) as total_units_ly
 			,sum(total_sales_ly) as total_sales_ly
 		from(
@@ -136,52 +127,12 @@ from
 						when date_part('year', sale_date)::integer = date_part('year',now())::integer
 					then sum(units)
 					else 0 
-					end as current_units
-		/*			
-					,case --units sold LAST year that are past the current month
-						when date_part('month',sale_date)::integer > date_part('month',now())::integer
-						and date_part('year', sale_date)::integer = date_part('year',now())::integer -1
-					then sum(units)
-					else 0
-					end as past_month_ly_units
-					,case --units sold LAST year up to current month
-						when date_part('year', sale_date)::integer = date_part('year',now())::integer -1
-						and date_part('month',sale_date)::integer <= date_part('month',now())::integer
-					then sum(units)
-					else 0
-					end as current_units_ly
-					,case --$ sold LAST year up to current month
-						when date_part('year', sale_date)::integer = date_part('year',now())::integer -1
-						and date_part('month',sale_date)::integer <= date_part('month',now())::integer
-					then sum(sales)
-					else 0
-					end as current_sales_ly
-					,case-- units sold YEAR BEFORE last year that are past the current month
-						when date_part('month',sale_date)::integer > date_part('month',now())::integer
-						and date_part('year', sale_date)::integer = date_part('year',now())::integer -2
-					then sum(units)
-					else 0
-					end as past_month_last_ly_units
-		*/			
+					end as current_units		
 					,case--$ sold THIS year up to current month
 						when date_part('year', sale_date)::integer = date_part('year',now())::integer
 					then sum(sales)
 					else 0 
-					end as current_sales
-		/*			
-					,case--$ sold LAST year that are past the current month
-						when date_part('month',sale_date)::integer > date_part('month',now())::integer
-						and date_part('year', sale_date)::integer = date_part('year',now())::integer -1
-					then sum(sales)
-					else 0
-					end as past_month_ly_sales			
-					,case-- $ sold YEAR BEFORE last year that are past the current month
-						when date_part('month',sale_date)::integer > date_part('month',now())::integer
-						and date_part('year', sale_date)::integer = date_part('year',now())::integer -2
-					then sum(sales)
-					else 0
-					end as past_month_last_ly_sales
-		*/			
+					end as current_sales		
 					,case --total of last years units
 						when date_part('year', sale_date)::integer = date_part('year',now())::integer -1
 					then sum(units)
@@ -213,9 +164,7 @@ from
 				model
 				,s_month
 				,sum(current_units) as current_units
-		--		,sum(past_month_ly_units) as past_month_ly_units
 				,sum(current_sales) as current_sales
-		--		,sum(past_month_ly_sales) as past_month_ly_sales
 				,sum(total_units_ly) as total_units_ly
 				,sum(total_sales_ly) as total_sales_ly
 			from(
@@ -231,35 +180,7 @@ from
 						when date_part('year', date_shipped)::integer = date_part('year',now())::integer
 					then sum(sales)
 					else 0 
-					end as current_sales
-		/* last years next month - end of year 
-					,case --units sold LAST year that are past the current month
-						when date_part('month',date_shipped)::integer > date_part('month',now())::integer
-						and date_part('year', date_shipped)::integer = date_part('year',now())::integer -1
-					then sum(sales)
-					else 0
-					end as past_month_ly_sales
-					,case --units sold LAST year that are past the current month
-						when date_part('month',date_shipped)::integer > date_part('month',now())::integer
-						and date_part('year', date_shipped)::integer = date_part('year',now())::integer -1
-					then sum(units)
-					else 0
-					end as past_month_ly_units
-		*/
-		/*	last year sales jan-now		
-					,case --$ sold LAST year up to current month
-						when date_part('year', date_shipped)::integer = date_part('year',now())::integer -1
-						and date_part('month',date_shipped)::integer <= date_part('month',now())::integer
-					then sum(sales)
-					else 0
-					end as current_sales_ly
-					,case --Units sold LAST year up to current month
-						when date_part('year', date_shipped)::integer = date_part('year',now())::integer -1
-						and date_part('month',date_shipped)::integer <= date_part('month',now())::integer
-					then sum(units)
-					else 0
-					end as current_units_ly
-		*/			
+					end as current_sales	
 					,case --total of last years units
 						when date_part('year', date_shipped)::integer = date_part('year',now())::integer -1
 					then sum(units)
@@ -338,6 +259,12 @@ from
 			(
 			select s.model, ams_units, l4_units_ships, s.l12_units_ships
 			from misc_views.ams_ships s
+			)
+		,home_owned as 
+			(
+			select h.item_id, h.ship_type
+			from forecast.home_owned h
+			where h.date_inserted::date = (select max(date_inserted::date) from forecast.home_owned)
 			)
 		
 		select 
@@ -420,8 +347,6 @@ from
 				then s.current_sales
 				else 0
 				end as s_sales_ly
-		--	,pos.total_units_ly
-		--	,pos.total_sales_ly
 			,l4_units
 			,l13_units
 			,l52_units
@@ -432,6 +357,8 @@ from
 			,l4_units_ships
 			,first_purchase_date
 			,l12_units_ships
+			,ship_type
+			,fcast_units_customer
 		from fcast
 		left join s
 		on s.model = fcast.model and s_month = fcast_month  
@@ -449,13 +376,14 @@ from
 		on fcast.model = ams_ships.model
 		left join ssr 
 		on ssr.model = fcast.model and ssr.ssr_month = fcast_month and ssr.ssr_year = fcast_year
+		left join home_owned
+		on fcast.tool_id = home_owned.item_id
 
 
 )t1
 )
 
 ;
-
 
 
 --FORECAST AGENDA FACT VIEW
@@ -491,6 +419,8 @@ select tiv.tool_id_id
 	,l4_units_ships
 	,first_purchase_date
 	,l12_units_ships
+	,sale_type_id
+	,fcast_units_customer
 from forecast.forecast_agenda_view fav
 left join power_bi.tool_id_view tiv
 on fav.tool_id::text = tiv.tool_id
@@ -506,6 +436,8 @@ left join power_bi.priority_code pc
 on pc.priority_code = fav.priority_code
 left join power_bi.fcast_date_tbl mt
 on mt.month_number = fav.fcast_month and mt.year_number = fav.fcast_year
+left join sale_type st 
+on fav.ship_type = st.sale_type
 )
 
 ;
@@ -545,7 +477,9 @@ insert into forecast.forecast_agenda_tbl (
     current_cost,
     ssr_id,
     l4_units_ships,
-    first_purchase_date
+    first_purchase_date,
+    ship_type,
+    fcast_units_customer
 )
 select     
 	fcast_id,
@@ -577,7 +511,9 @@ select
     current_cost,
     ssr_id,
     l4_units_ships,
-    first_purchase_date
+    first_purchase_date,
+    ship_type,
+    fcast_units_customer
  from forecast.forecast_agenda_view;
  /*END VIEW TO STAGING*/
  

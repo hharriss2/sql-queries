@@ -47,11 +47,11 @@ ON pf.tool_id = ps2.tool_id AND pf.promo_type = ps2.promo_type AND pf.inserted_a
 
 /*NEWEST VIEW*/
 /*promo funding clean view*/
-create view pos_reporting.promo_funding_clean_view as (
+create  or replace view pos_reporting.promo_funding_clean_view as (
 SELECT DISTINCT 
  	pf.id, 
     cbm.cat,
-    coalesce(s.model, pf.model) as model,
+    coalesce(sl.model,s.model, pf.model) as model,
     pr.product_name,
     pf.tool_id::integer AS tool_id,
     pf.start_date,
@@ -66,7 +66,8 @@ SELECT DISTINCT
             WHEN pf.suggested_retail ~~ '%$%'::text THEN substr(pf.suggested_retail, 2)::numeric(10,2)
             ELSE pf.suggested_retail::numeric(10,2)
         END AS suggested_retail,
-    pf.inserted_at
+    pf.inserted_at::date as submit_date,
+    coalesce(sl.division, s.division) as division
 FROM promo_funding_staging2 pf
 JOIN ( --finds the most recent promo submitted
 	SELECT DISTINCT pf.tool_id,
@@ -86,6 +87,11 @@ ON pf.tool_id = ps2.tool_id AND pf.promo_type = ps2.promo_type AND pf.inserted_a
      			from clean_data.master_com_list
 				
 				) s ON pf.tool_id = s.item_id::text
+	left join (
+				select * 
+				from pos_reporting.lookup_com
+				) sl
+	on pf.tool_id = sl.item_id
      LEFT JOIN cat_by_model cbm ON cbm.model = coalesce(s.model,pf.model)
      LEFT JOIN products_raw pr ON pr.model = s.model::text
   WHERE 1 = 1 AND NOT (pf.id IN ( SELECT DISTINCT promo_funding_dirty2.id

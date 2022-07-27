@@ -16,6 +16,7 @@ select distinct model_name
 		,coalesce(l2.brand_name, l1.brand_name) as brand_name
         ,bed_size
         ,wl_model
+        ,account_manager
 from
 ( 
     /*START L1*/
@@ -29,7 +30,11 @@ from
 				from clean_data.master_com_list
 				)
 		,cbm as (select * 
-				from cat_by_model
+				from cat_by_model cbm
+				left join category c 
+				on cbm.cat = c.category_name
+				left join account_manager a 
+				on c.am_id = a.account_manager_id
 				)
 		,p as (select distinct model, wl_model , product_name, division, color, upc, size
 				from products_raw 
@@ -49,6 +54,7 @@ from
 		,brand_name
 		,base_id
 		,coalesce(kl.bed_size,size) as bed_size
+		,account_manager
 	from mv
 	left join ml
 	on mv.model_name = ml.model
@@ -114,3 +120,4 @@ left join
 on l1.item_id = l2.tool_id
 )
 ;
+

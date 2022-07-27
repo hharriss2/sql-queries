@@ -9,7 +9,7 @@ select
 	,fcast_month
 	,fcast_year
 	,end_of_week_oh_unit
-	,on_order_unit		
+	,on_order_unit
 	,fcast_units
 	,case 
 		when fcast_month <date_part('month',now()) and fcast_year = date_part('year',now()) 
@@ -36,6 +36,7 @@ select
 	,l12_units_ships
 	,ship_type
 	,fcast_units_customer
+	,on_promo_bool
 from
 	(
 		with
@@ -88,8 +89,11 @@ from
 					 else fac.units 
 					 end as fcast_units_customer
 					 --3. case statement to determine forecast year
+					,fhist.l4_units
+					,fhist.l12_units
+					,fhist.ams_units
 				from forecast.forecast_agenda fa
-				join (
+				join (-- bring in customer forecast table
 					  select * 
 					  from forecast.forecast_agenda_customer
 					  where date_inserted::date =(
@@ -100,6 +104,8 @@ from
 				on fa.model = fac.model and fa.forecast_date = fac.forecast_date
 				left join clean_data.com_product_list mcl
 				on fa.model = mcl.model
+				left join forecast.forecast_historicals fhist --bring in historicals
+				on fhist.model = fa.model and fhist.forecast_date = fa.forecast_date
 				where fa.date_inserted::date =(select max(date_inserted::date) from forecast.forecast_agenda)
 				--2. finding the most recent forcast data for adjusted and customer
 				and fa.model != '2241009W'--because kevin told me to 
@@ -118,7 +124,7 @@ from
 			,sum(total_sales_ly) as total_sales_ly
 		from(
 				select tool_id::integer
-					,coalesce(lc.model, cl.model) as model
+					,cl.model
 					,date_part('month', sale_date)::integer as pos_month
 					,date_part('year', sale_date)::integer as pos_year
 					--same logic as forecast
@@ -146,10 +152,8 @@ from
 				from pos_reporting.retail_sales rs
 				left join clean_data.com_product_list cl
 				on rs.tool_id = cl.item_id::text
-				left join pos_reporting.lookup_com lc
-				on lc.item_id = rs.tool_id
 				group by tool_id::integer
-					,coalesce(lc.model, cl.model)
+					,cl.model
 					,date_part('month', sale_date)::integer
 					,date_part('year', sale_date)::integer
 			) t1
@@ -262,9 +266,14 @@ from
 			)
 		,home_owned as 
 			(
-			select h.item_id, h.ship_type
+			select h.item_id, h.ship_type, 'Y' as is_replin
 			from forecast.home_owned h
 			where h.date_inserted::date = (select max(date_inserted::date) from forecast.home_owned)
+			)
+		,on_promo as 
+			(
+			select * 
+			from power_bi.on_promo
 			)
 		
 		select 
@@ -347,18 +356,23 @@ from
 				then s.current_sales
 				else 0
 				end as s_sales_ly
-			,l4_units
+			,pos_lw.l4_units
 			,l13_units
 			,l52_units
-			,ams_units
+			,coalesce(fcast.ams_units, ams_ships.ams_units) as ams_units
 			,current_cost * fcast_units as current_cost
 			,fcast_id
 			,ssr_id
-			,l4_units_ships
+			,coalesce(fcast.l4_units,ams_ships.l4_units_ships) as l4_units_ships
 			,first_purchase_date
-			,l12_units_ships
-			,ship_type
+			,coalesce(fcast.l12_units,ams_ships.l12_units_ships) as l12_units_ships
+			,coalesce(is_replin, 'N') as ship_type
 			,fcast_units_customer
+			,case 
+				when on_promo_bool is null 
+				then 'No' 
+				else on_promo_bool
+				end as on_promo_bool
 		from fcast
 		left join s
 		on s.model = fcast.model and s_month = fcast_month  
@@ -378,12 +392,17 @@ from
 		on ssr.model = fcast.model and ssr.ssr_month = fcast_month and ssr.ssr_year = fcast_year
 		left join home_owned
 		on fcast.tool_id = home_owned.item_id
+		left join on_promo
+		on on_promo.tool_id = fcast.tool_id
+		
 
 
 )t1
 )
 
 ;
+
+
 
 
 --FORECAST AGENDA FACT VIEW
@@ -419,8 +438,9 @@ select tiv.tool_id_id
 	,l4_units_ships
 	,first_purchase_date
 	,l12_units_ships
-	,sale_type_id
+	,ship_type as sale_type_id
 	,fcast_units_customer
+	,on_promo_bool
 from forecast.forecast_agenda_view fav
 left join power_bi.tool_id_view tiv
 on fav.tool_id::text = tiv.tool_id
@@ -436,8 +456,6 @@ left join power_bi.priority_code pc
 on pc.priority_code = fav.priority_code
 left join power_bi.fcast_date_tbl mt
 on mt.month_number = fav.fcast_month and mt.year_number = fav.fcast_year
-left join sale_type st 
-on fav.ship_type = st.sale_type
 )
 
 ;
@@ -479,7 +497,8 @@ insert into forecast.forecast_agenda_tbl (
     l4_units_ships,
     first_purchase_date,
     ship_type,
-    fcast_units_customer
+    fcast_units_customer,
+    on_promo_bool
 )
 select     
 	fcast_id,
@@ -511,9 +530,11 @@ select
     current_cost,
     ssr_id,
     l4_units_ships,
+	l12_units_ships,
     first_purchase_date,
     ship_type,
-    fcast_units_customer
+    fcast_units_customer,
+    on_promo_bool
  from forecast.forecast_agenda_view;
  /*END VIEW TO STAGING*/
  

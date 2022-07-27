@@ -24,27 +24,6 @@ with pr as (
 --	                ,p.product_name
 	                , p.division
 	                ,model_tool.date_compare
-	--                ,p.model as test_model
-	--                ,model_tool.model as model_tool_model
-	--                ,pr_com.model as pr_com_model
---	                ,model_tool.tool_id as model_tool_tool_id
-	--                ,ships_model as s_model
-	--                ,w.item_id as w_item_id
-	--                ,w.w_2_item_id
-	--                ,w.s_upc as s_upc
-	--                ,w.w_upc as w_upc
-	--                ,p.upc as p_upc
-	--                ,prcom.upc as prcom_upc
-	--                ,model_tool.upc as model_tool_upc
---	                ,
---	                        case --case statement chooses upc over base_upc unless upc is missing. 
---	                        -- wm most likely will have white label upc on item360 so it tried pairing white lables first, then base
---	                        When w.upc is not null then w.upc
---	                        when w.upc is null then p.upc
---	                        when p.upc is null then p.base_upc
---	                        when p.base_upc is null then prcom.upc
---	                        when prcom.upc is null then prcom.base_upc 
---	                        else w.upc end as upc
 	            from products_raw p 
 	            left join  (
 	            			--start w

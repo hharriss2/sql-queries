@@ -17,7 +17,8 @@ create or replace view power_bi.promo_funding_tracker_by_week2 as (
     wmw3.wmcal_id AS submit_week_id,
     t1.sales,
     t1.sales_funding,
-    w.wmcal_id
+    w.wmcal_id,
+    b.brand_id
    FROM ( SELECT pf.id,
             s.id AS sid,
             pf.model,
@@ -27,7 +28,8 @@ create or replace view power_bi.promo_funding_tracker_by_week2 as (
             pf.promo_type,
             pf.start_date,
             pf.end_date,
-            pf.product_name,
+           coalesce(tpb.product_name, pf.product_name) as product_name,
+           coalesce(tpb.brand_name, s.brand_name) as brand_name,
             pf.suggested_retail,
             pf.submit_date AS submit_week,
             (s.units::numeric * pf.funding_amt)::numeric(10,2) AS sales_funding,
@@ -35,6 +37,7 @@ create or replace view power_bi.promo_funding_tracker_by_week2 as (
             sale_date
            FROM pos_reporting.retail_sales s
           RIGHT JOIN pos_reporting.promo_funding_clean2 pf ON s.tool_id::integer = pf.tool_id
+          left join lookups.tool_pn_brand tpb on tpb.tool_id = s.tool_id
           WHERE s.sale_date >= pf.start_date 
           AND s.sale_date <= pf.end_date 
           AND pf.funding_amt > 0::numeric
@@ -58,5 +61,6 @@ create or replace view power_bi.promo_funding_tracker_by_week2 as (
      LEFT JOIN power_bi.product_name_view_pbix pn ON pn.product_name::text = t1.product_name
      LEFT JOIN power_bi.group_id_view g ON g.tool_id = t1.tool_id
      LEFT JOIN power_bi.retail_price rp ON rp.item_id = t1.tool_id
+     left join power_bi.brand_name b on t1.brand_name = b.brand_name
      
      );

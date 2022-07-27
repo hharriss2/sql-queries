@@ -159,11 +159,14 @@ left join rp on retail_funding.tool_id = rp.item_id
             pf.end_date,
             pf.submit_date::date AS submit_week,
             pf.suggested_retail,
-            pf.product_name,
+           coalesce(tpb.product_name, pf.product_name) as product_name,
+           coalesce(tpb.brand_name, s.brand_name) as brand_name,
             (s.units::numeric * pf.funding_amt)::numeric(10,2) AS sales_funding,
             s.sales::real AS sales
            FROM pos_reporting.retail_sales s
              RIGHT JOIN pos_reporting.promo_funding_clean2 pf ON s.tool_id::integer = pf.tool_id
+             left join lookups.tool_pn_brand tpb
+             on s.tool_id = tpb.tool_id
           WHERE s.sale_date >= pf.start_date AND s.sale_date <= pf.end_date AND pf.funding_amt > 0::numeric
         ), cbm AS (
          SELECT cat_by_model.model,
@@ -246,7 +249,10 @@ left join rp on retail_funding.tool_id = rp.item_id
             retail_price.price_retail,
             retail_price.price_was
            FROM power_bi.retail_price
-        )
+        ), bn as (
+        	select * 
+        	from power_bi.brand_name
+        	)
  SELECT retail_funding.pf_id,
     m.model_id,
     d.division_id,
@@ -264,7 +270,8 @@ left join rp on retail_funding.tool_id = rp.item_id
     rp.retail_price_id,
     g.group_id_id,
     sum(retail_funding.sales::numeric(10,2)) AS sales,
-    sum(retail_funding.sales_funding)::numeric(10,2) AS funding_amt_total
+    sum(retail_funding.sales_funding)::numeric(10,2) AS funding_amt_total,
+    brand_id
    FROM retail_funding
      JOIN cbm ON retail_funding.model::text = cbm.model
      JOIN c ON cbm.cat = c.category_name
@@ -280,6 +287,7 @@ left join rp on retail_funding.tool_id = rp.item_id
      LEFT JOIN pn ON retail_funding.product_name = pn.product_name::text
      LEFT JOIN g ON retail_funding.tool_id = g.tool_id
      LEFT JOIN rp ON retail_funding.tool_id = rp.item_id
-  GROUP BY retail_funding.pf_id, m.model_id, d.division_id, cbm.cbm_id, t.tool_id_id, a.account_manager_id, g.group_id_id, retail_funding.funding_amt, pt.promo_id, wmw1.wm_cal_id_1, wmw2.wm_cal_id_2,wmw3.wm_cal_id_3, pn.product_name_id, retail_funding.suggested_retail, rp.retail_price_id
+     left join bn on retail_funding.brand_name = bn.brand_name
+  GROUP BY retail_funding.pf_id, m.model_id, d.division_id, cbm.cbm_id, t.tool_id_id, a.account_manager_id, g.group_id_id, retail_funding.funding_amt, pt.promo_id, wmw1.wm_cal_id_1, wmw2.wm_cal_id_2,wmw3.wm_cal_id_3, pn.product_name_id, retail_funding.suggested_retail, rp.retail_price_id, bn.brand_id
   );
   /*END VIEW*/

@@ -41,7 +41,7 @@ create or replace view power_bi.promo_funding_pos_screen as (
           RIGHT JOIN pos_reporting.promo_funding_clean2 pf ON s.tool_id::integer = pf.tool_id
           left join lookups.tool_pn_brand tpb on s.tool_id = tpb.tool_id
           where to_char(sale_date, 'mm-dd')>= to_char(start_date, 'mm-dd')
-		  and to_char(sale_date,'mm-dd') <= to_char(end_date,'mm-dd')
+		   and to_char(sale_date,'mm-dd') <= to_char(end_date,'mm-dd')
 --          AND pf.funding_amt > 0::numeric
           ) t1
      JOIN cat_by_model cbm on cbm.model = t1.model

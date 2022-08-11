@@ -13,7 +13,8 @@ select t1.id,
     t1.product_name,
     t1.model::text,
     t1.base_id,
-    t1.brand_name
+    t1.brand_name,
+    stat.id as item_stat_id
 from(
 with 
     ssa as 
@@ -453,6 +454,8 @@ on t1.item_id = w.item_num
 LEFT JOIN cat_by_model cbm 
 on cbm.model = t1.model
 left join category c on c.category_name = cbm.cat
+left join lookups.item_status_store stat
+on t1.model = stat.model
 where t1.item_id in 
 		(
 			select item_num

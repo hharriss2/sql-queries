@@ -19,8 +19,8 @@ create or replace view forecast.purchase_orders_fcast as (
 --							 partition by model
 --							 order by ssr_id) as oh_test
 		,sum(ats_qty) as ats_qty
-		,pom.ssr_id as min_id
-		,pom.purchase_date as first_purchase_date
+		,ssr_id as min_id
+		,purchase_date + 7 as first_purchase_date 
 	from
 		(
 	select 
@@ -51,7 +51,7 @@ create or replace view forecast.purchase_orders_fcast as (
 		,date_part('month', purchase_date)::integer
 		,date_part('year', purchase_date)::integer
 		)t1
-	left join forecast.purchase_orders_min_date3 pom
+	left join forecast.purchase_orders_min_date pom
 	on t1.model = pom.model and t1.ssr_month = pom.ssr_month and t1.ssr_year = pom.ssr_year
 		group by 
 			t1.model

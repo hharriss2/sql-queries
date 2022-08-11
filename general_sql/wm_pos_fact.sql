@@ -117,12 +117,12 @@ WITH rs AS (
 /*END ECOMM FACT VIEW*/
 
 /*START STORES FACT VIEW*/
-create view power_bi.wm_stores_pos_fact as (
+create or replace view power_bi.wm_stores_pos_fact as (
 with 
     ssa as 
             (
 				select * 
-				from misc_views.wm_stores_pos
+				from pos_reporting.wm_stores_pos
             )
     ,d as
             (
@@ -171,8 +171,8 @@ select ssa.id
 , ssa.pos_sales
 , wmcal.wmcal_id
 , tv.tool_id_id
-,ssa.cbm_id,
-,ssa.am_id AS account_manager_id,
+,ssa.cbm_id
+,ssa.am_id AS account_manager_id
 ,d.division_id
 , rt.retail_type_id
 , pnv.product_name_id
@@ -180,10 +180,11 @@ select ssa.id
 ,bn.brand_id
 ,g.group_id_id
 ,bid.tool_id_id as base_id_id
+,1 as item_type_id
+,ssa.item_stat_id
 from ssa
 left join tv on tv.tool_id = ssa.item_id::text-- tool id dim
 left join g on g.tool_id::text = tv.tool_id-- group id dim
-left join c on c.category_name = ssa.cat-- gets cat dim
 left join wmcal on wmcal.date = ssa.sale_date-- gets calendar dim
 --left join d on model_tool.division = d.division_name --division dim
 left join d on d.division_name= ssa.division --get division dim other way

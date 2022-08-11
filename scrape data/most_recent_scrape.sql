@@ -30,7 +30,12 @@ create or replace view scrape_data.most_recent_scrape as (
     g.group_id,
     ic.class,
     lt.division,
-    lt.cat
+    lt.cat,
+    pc.early_date,
+    pc.recent_date,
+    pc.early_retail,
+    pc.recent_retail,
+    pc.recent_over_early_retail
 FROM scrape_data.scrape_tbl sh
 left join group_ids g
 on sh.item_id = g.tool_id
@@ -43,6 +48,8 @@ left join
 	 from lookups.lookup_tbl
 	 ) lt
 on lt.item_id = sh.item_id
+left join scrape_data.price_compare pc 
+on sh.item_id = pc.item_id
 WHERE sh.date_inserted = (( 
 			SELECT max(sh_1.date_inserted) AS max
            	FROM scrape_data.scrape_tbl sh_1
@@ -56,3 +63,4 @@ AND (
     )
 )
 ;
+

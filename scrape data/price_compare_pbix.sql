@@ -200,6 +200,7 @@ select *
 							,count(distinct date_inserted) scraped_at_retail
 							,row_number() over (partition by item_id order by count(distinct date_inserted) desc) count_rank
 						from scrape_data.scrape_tbl
+						where date_inserted >='2022-07-11'
 						group by item_id
 							,((price_retail *.1) *10)::numeric(10,0) 
 						) t1

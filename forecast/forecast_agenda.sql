@@ -39,6 +39,8 @@ select
 	,on_promo_bool
 	,current_cost_customer
 	,s_units_ly_ytd
+	,fcast_type_id
+	,fcast_division_id	
 from
 	(
 		with
@@ -88,16 +90,24 @@ from
 					end as is_month_ly
 					,fa.units as fcast_units
 					,fa.forecast_date
+					,fa.fcast_type_id
+					,fa.fcast_division_id
 				from forecast.forecast_agenda fa
-				where date_inserted::date =(select max(date_inserted::date) from forecast.forecast_agenda)
+				where date_inserted::date in
+						(--find most recent forecast for both divisions
+						select max(date_inserted::date)
+						from forecast.forecast_agenda
+						group by fcast_division_id
+						)
 				and fa.model != '2241009W'--because kevin told me to 
 				)
 		,fac as (
 				select * 
 					  from forecast.forecast_agenda_customer
-					  where date_inserted::date =(
-					  					select max(date_inserted::date) 
+					  where date_inserted::date in(
+					  					select max(date_inserted::date)
 					  					from forecast.forecast_agenda_customer
+					  					group by fcast_division_id
 					  							)
 				)
 		,mcl as
@@ -112,37 +122,46 @@ from
 				)
 		,fhist as 
 				(
-				select * 
+				select  *
+				 , date_part('month', forecast_date)::integer as fcast_month
+				 , date_part('year',forecast_date)::integer as fcast_year
 				from forecast.forecast_historicals
+				where 1=1
+				--take out current date
+				and forecast_date != to_char(now()::date, 'YYYY-MM-01')::date
 				)
 	select fcast_id
 		,coalesce(mcl.item_id,fa.item_id) as tool_id
 		,fa.model
 		,fa.implimentation_code
 		,fa.priority_code
-		,fa.fcast_month
-		,fa.fcast_year
+		,coalesce(fhist.fcast_month,fa.fcast_month) as fcast_month
+		,coalesce(fhist.fcast_year,fa.fcast_year) as fcast_year
 		,fa.is_month
 		,fa.is_month_ly
-		,case
-			when date_part('month',now()::date) -1 = fcast_month and date_part('year',now()::date) = fcast_year then 0 
+		,coalesce(forecast_units_old,
+		case
+			when date_part('month',now()::date) -1 = fa.fcast_month and date_part('year',now()::date) = fa.fcast_year then 0 
 			else fcast_units
-		 end as fcast_units
-		,case --if customer forecast is 0, then use adjusted forecast
-			 when date_part('month',now()::date) -1 = fcast_month and date_part('year',now()::date) = fcast_year then 0 
+		 end) as fcast_units
+		,coalesce(forecast_units_new,
+		case --if customer forecast is 0, then use adjusted forecast
+			 when date_part('month',now()::date) -1 = fa.fcast_month and date_part('year',now()::date) = fa.fcast_year then 0 
 			 when fac.units = 0 then fcast_units
 			 else fac.units 
-		 end as fcast_units_customer
+		 end) as fcast_units_customer
 		,fhist.l4_units
 		,fhist.l12_units
 		,fhist.ams_units
 		,fa.forecast_date
 		,coalesce(on_promo_bool, 'No') as on_promo_bool
+		,fa.fcast_type_id
+		,fa.fcast_division_id
 	from fa 
 	join fac
 	on fa.model = fac.model and fa.forecast_date = fac.forecast_date
 	left join  mcl
-	on fa.model = mcl.model
+	on fac.model = mcl.model
 	left join fhist --bring in historicals
 	on fhist.model = fa.model and fhist.forecast_date = fa.forecast_date
 	left join promo_range
@@ -303,6 +322,7 @@ from
 			(
 			select s.model, ams_units, l4_units_ships, s.l12_units_ships
 			from misc_views.ams_ships s
+			where model in (select distinct model from forecast.forecast_agenda)
 			)
 		,home_owned as 
 			(
@@ -410,6 +430,8 @@ from
 				then 0
 				else 0
 				end as s_units_ly_ytd
+			,fcast_type_id
+			,fcast_division_id
 		from fcast
 		left join s
 		on s.model = fcast.model and s_month = fcast_month  
@@ -476,6 +498,8 @@ select tiv.tool_id_id
 	,on_promo_bool
 	,current_cost_customer
 	,s_units_ly_ytd
+	,fcast_type_id
+	,fcast_division_id
 from forecast.forecast_agenda_view fav
 left join power_bi.tool_id_view tiv
 on fav.tool_id::text = tiv.tool_id
@@ -494,12 +518,8 @@ on mt.month_number = fav.fcast_month and mt.year_number = fav.fcast_year
 )
 
 ;
-select * 
-from forecast.forecast_agenda_tbl;
 
-
-
-/*START VIEW TO STAGING*/
+/*START VIEW TO TABLE*/
 truncate forecast.forecast_agenda_tbl;
 insert into forecast.forecast_agenda_tbl ( 
     fcast_id,
@@ -577,4 +597,4 @@ select
     current_cost_customer,
     s_units_ly_ytd
  from forecast.forecast_agenda_view;
- /*END VIEW TO STAGING*/
+ /*END VIEW TO TABLE*/

@@ -71,13 +71,7 @@ SELECT DISTINCT pf.id,
            			) 
            		OR NOT (s.model::text IN ( 
            					SELECT model_view.model_name
-           					FROM model_view)) 
-           		AND NOT (pf.model IN ( 
-       						SELECT DISTINCT model_view.model_name
-       						FROM model_view)) 
-           		OR NOT (pr.product_name IN ( 
-           					SELECT product_name_view.product_name
-          					 FROM product_name_view)) 
+           					FROM model_view))  
           		OR NOT (pf.tool_id IN ( 
           					SELECT DISTINCT tool_id_view.tool_id
            					FROM tool_id_view)) 

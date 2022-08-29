@@ -129,7 +129,7 @@ WITH model_tool AS (
     coalesce(lookup.model,model_tool.model) as model,
     coalesce(lookup.division,model_tool.division) as division,
     coalesce(lookup.current_item_id,rs.tool_id) as tool_id,
-    coalesce(rs.product_name,lookup.product_name,pn.product_name) as product_name,
+    coalesce(pn.product_name,lookup.product_name,rs.product_name) as product_name,
     g.group_id_id,
     coalesce(cb.base_id,wmc.item_id, rs.tool_id) AS base_id,
     rs.sale_date,

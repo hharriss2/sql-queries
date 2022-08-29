@@ -3,7 +3,7 @@
 --exact code but modified with self join and turned into fact table
 --it seperate table into recent and early dates/retails to calculate over %
 -- lets us compare items that are NOT on promo that have significant retail changes
-create view scrape_data.price_compare as (
+create or replace view scrape_data.price_compare as (
 with fact as (
 		select * 
 		from
@@ -18,19 +18,27 @@ with fact as (
 				,l1.wm_name
 				,l1.group_id
 				,l1.model_name
-				,t1.date_inserted as recent_date
-				, t2.date_inserted early_date
+				,to_char(t1.date_inserted,'yyyy-mm-dd')::date as recent_date
+				,coalesce(to_char( rdf.date_inserted,'yyyy-mm-dd'),to_char( t2.date_inserted,'yyyy-mm-dd'))::date as early_date
 				, t1.price_retail as recent_retail
-				, t2.price_retail as early_retail
-				,case when t2.price_retail is not null
-				then ((t1.price_retail-t2.price_retail) /(t2.price_retail))::numeric(10,2)
-				else 0 end as recent_over_early_retail
+				, coalesce(rdf.price_retail, t2.price_retail)::numeric(10,2) as early_retail
+				,t1.price_retail -coalesce(rdf.price_retail, t2.price_retail) as retail_difference
+				,case when coalesce(rdf.price_retail, t2.price_retail) is not null
+					then ((t1.price_retail - coalesce(rdf.price_retail, t2.price_retail))/(coalesce(rdf.price_retail,t2.price_retail)))::numeric(10,2) 
+					end as recent_over_early_retail
 				,coalesce(t1.on_promo_bool, 'No') as on_promo_bool
 			from scrape_data.price_change t1
 			join scrape_data.price_change t2
 			on t1.item_id = t2.item_id
 			left join lookups.lookup_tbl l1
 			on t1.item_id = l1.item_id
+			left join ( -- joining rdf(retail date filter) to colaesce between this and early date
+						--finds the price retail that has been scraped the most. round to 10 to narrow down search
+						select * 
+						from scrape_data.every_day_retail
+
+						) rdf
+			on t2.item_id = rdf.item_id
 			where 1=1
 			and (-- row num can be combo of 1&2 or 1&1
 					(t1.row_number = 1 and t2.row_number = 2)
@@ -192,20 +200,28 @@ select *
 			on t1.item_id = l1.item_id
 			left join ( -- joining rdf(retail date filter) to colaesce between this and early date
 						--finds the price retail that has been scraped the most. round to 10 to narrow down search
-						select *
-						from (
-						select item_id
-							,((price_retail *.1) *10)::numeric(10,0)  as price_retail
-							,min(date_inserted) as date_inserted
-							,count(distinct date_inserted) scraped_at_retail
-							,row_number() over (partition by item_id order by count(distinct date_inserted) desc) count_rank
-						from scrape_data.scrape_tbl
-						where date_inserted >='2022-07-11'
-						group by item_id
-							,((price_retail *.1) *10)::numeric(10,0) 
-						) t1
-						where count_rank = 1
-
+select *
+from (
+select item_id
+	,((price_retail *.1) *10)::numeric(10,0)  as price_retail
+	,min(date_inserted) as date_inserted
+	,count(distinct date_inserted) scraped_at_retail
+	,row_number() over (partition by item_id order by count(distinct date_inserted) desc) count_rank
+from (-- scrape tbl + promo range SQ
+	  -- Identify Item Id's that were scraped during Promo and Omit those
+	select * 
+	from scrape_data.scrape_tbl sc
+	left join pos_reporting.promo_range pr
+	on sc.item_id = pr.tool_id
+	and sc.date_inserted >pr.start_date
+	and sc.date_inserted <=pr.end_date
+	and item_id in (select item_id from lookups.tool_id_numeric)
+	) t1
+where promo_bool is null
+group by item_id
+	,((price_retail *.1) *10)::numeric(10,0) 
+) t1
+where count_rank = 1
 						) rdf
 			on t2.item_id = rdf.item_id
 			where 1=1

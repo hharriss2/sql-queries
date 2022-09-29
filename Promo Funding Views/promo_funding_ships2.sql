@@ -1,4 +1,4 @@
- create or replace view power_bi.promo_funding_ships2 as (
+create or replace view power_bi.promo_funding_ships2 as (
  SELECT t1.pfid,
     m.model_id,
     d.division_id,
@@ -57,10 +57,11 @@
      JOIN model_view m ON t1.model::text = m.model_name::text
      JOIN power_bi.tool_id_view t ON t1.tool_id::text = t.tool_id::text
      JOIN account_manager a ON a.account_manager_id = c.am_id
-     JOIN ( SELECT DISTINCT products_raw.model,
-            products_raw.division,
-            products_raw.product_name
-           FROM products_raw
+     JOIN (  select p1.model, division, product_name
+  from products_raw p1
+  join  (select model, max(inserted_at) as inserted_at from products_raw group by model) p2
+  on p1.model || p1.inserted_at::text = p2.model ||p2.inserted_at::text
+  where 1=1
            ) t2 ON t2.model = t1.model::text
      LEFT JOIN divisions d ON d.division_name = t2.division
      LEFT JOIN power_bi.promo_type pt ON pt.promo_name = t1.promo_type

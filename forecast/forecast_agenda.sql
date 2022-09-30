@@ -93,9 +93,9 @@ from
 					,fa.fcast_type_id
 					,fa.fcast_division_id
 				from forecast.forecast_agenda fa
-				where date_inserted::date in
+				where date_inserted::date ||fcast_division_id::text in
 						(--find most recent forecast for both divisions
-						select max(date_inserted::date)
+						select max(date_inserted::date)||fcast_division_id::text
 						from forecast.forecast_agenda
 						group by fcast_division_id
 						)
@@ -104,8 +104,8 @@ from
 		,fac as (
 				select * 
 					  from forecast.forecast_agenda_customer
-					  where date_inserted::date in(
-					  					select max(date_inserted::date)
+					  where date_inserted::date||fcast_division_id::text in(
+					  					select max(date_inserted::date)::text || fcast_division_id
 					  					from forecast.forecast_agenda_customer
 					  					group by fcast_division_id
 					  							)
@@ -452,69 +452,6 @@ from
 		left join home_owned
 		on fcast.tool_id = home_owned.item_id
 )t1
-)
-
-;
-
-
-
-
-
---FORECAST AGENDA FACT VIEW
-create or replace view power_bi.forecast_agenda_pbix as (
-select tiv.tool_id_id
-	,mv.model_id
-	,cbm.cbm_id
-	,pn.product_name_id
-	,icv.ic_id
-	,pc.pc_id
-	,mt.fcast_date_id
-	,end_of_week_oh_unit
-	,on_order_unit
-	,fcast_units
-	,available_to_sell
-	,purchase_orders
-	,pos_units
-	,pos_units_ly
-	,pos_sales
-	,pos_sales_ly
-	,s_sales
-	,s_sales_ly
-	,s_units
-	,s_units_ly
-	,l4_units
-	,l13_units
-	,l52_units
-	,ams_units
-	,current_cost
-	,fcast_id
-	,ssr_id
---	,min_id
-	,l4_units_ships
-	,first_purchase_date
-	,l12_units_ships
-	,ship_type as sale_type_id
-	,fcast_units_customer
-	,on_promo_bool
-	,current_cost_customer
-	,s_units_ly_ytd
-	,fcast_type_id
-	,fcast_division_id
-from forecast.forecast_agenda_view fav
-left join power_bi.tool_id_view tiv
-on fav.tool_id::text = tiv.tool_id
-left join power_bi.model_view_pbix mv
-on mv.model_name = fav.model
-left join cat_by_model cbm
-on cbm.model = fav.model
-left join power_bi.product_name_view_pbix pn
-on fav.product_name = pn.product_name
-left join power_bi.imp_code_view icv
-on icv.implimentation_code = fav.implimentation_code
-left join power_bi.priority_code pc
-on pc.priority_code = fav.priority_code
-left join power_bi.fcast_date_tbl mt
-on mt.month_number = fav.fcast_month and mt.year_number = fav.fcast_year
 )
 
 ;

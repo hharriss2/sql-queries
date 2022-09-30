@@ -11,6 +11,7 @@ SELECT DISTINCT
     pf.end_date,
         CASE --if sales team enters in a $ sign, it gets rid of the symbold and turns the value to a number
             WHEN pf.funding_amt ~~ '%$%'::text THEN substr(pf.funding_amt, 2)::numeric(10,2)
+            when pf.funding_amt = '' then null ::numeric(10,2)
             ELSE pf.funding_amt::numeric(10,2)--otherwise convert the amount to a numer
         END AS funding_amt,
     pf.promo_type,
@@ -42,7 +43,16 @@ ON pf.tool_id = ps2.tool_id AND pf.promo_type = ps2.promo_type AND pf.inserted_a
 				) s 
 	ON pf.tool_id = s.item_id::text
      LEFT JOIN cat_by_model cbm ON cbm.model = s.model
-     LEFT JOIN products_raw pr ON pr.model = s.model::text
+     LEFT JOIN (select distinct product_name, p1.model
+                from products_raw p1
+                join (
+                        select model, max(inserted_at) as inserted_at
+		                from products_raw
+		                group by model
+                    )p2
+                on p1.model = p2.model and p1.inserted_at = p2.inserted_at
+                ) pr
+    on pr.model = s.model
   WHERE 1 = 1 AND NOT (pf.id IN ( SELECT DISTINCT promo_funding_dirty2.id
            FROM misc_views.promo_funding_dirty2))
 /*end promo clean view*/  

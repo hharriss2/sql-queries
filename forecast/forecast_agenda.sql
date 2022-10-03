@@ -53,7 +53,7 @@ from
 			--this one has ty and ny forecasts running dow
 					select 
 					dense_rank() over (order by
-						fa.model, fa.forecast_date
+						fa.model, fa.forecast_date, fcast_type_id
 					) as fcast_id
 					,fa.item_id
 					,fa.model
@@ -84,7 +84,7 @@ from
 						when date_part('month',fa.forecast_date)::integer <= date_part('month',now()::date -15)::integer
 					then 1
 						when date_part('month',fa.forecast_date)::integer > date_part('month',now()::date -15)::integer
-							AND date_part('year',fa. forecast_date)::integer = date_part('year',now())::integer
+							AND date_part('year',fa.forecast_date)::integer = date_part('year',now())::integer
 					then 2
 					else 3
 					end as is_month_ly
@@ -117,8 +117,8 @@ from
 				)
 		,promo_range as
 				(--cannot pull in id
-				select distinct tool_id, start_date, end_date, promo_bool as on_promo_bool
-				from pos_reporting.promo_range
+				select distinct model,item_id, forecast_date, promo_bool as on_promo_bool
+				from pos_reporting.promo_range2
 				)
 		,fhist as 
 				(
@@ -155,19 +155,19 @@ from
 		,fhist.ams_units
 		,fa.forecast_date
 		,coalesce(on_promo_bool, 'No') as on_promo_bool
+--		,'NA' as on_promo_bool
 		,fa.fcast_type_id
 		,fa.fcast_division_id
 	from fa 
 	join fac
-	on fa.model = fac.model and fa.forecast_date = fac.forecast_date
+	on fa.model = fac.model and fa.forecast_date = fac.forecast_date and fa.fcast_type_id = fac.fcast_type_id
 	left join  mcl
 	on fac.model = mcl.model
 	left join fhist --bring in historicals
-	on fhist.model = fa.model and fhist.forecast_date = fa.forecast_date
+	on fhist.model = fa.model and fhist.forecast_date = fa.forecast_date and fhist.fcast_type_id= fa.fcast_type_id
 	left join promo_range
-	on fa.item_id = promo_range.tool_id and start_date <=fa.forecast_date and end_date >=fa.forecast_date
-/*END FCAST*/	
-
+	on fa.item_id = promo_range.item_id and promo_range.forecast_date =fa.forecast_date
+/*END FCAST*/
 			)
 		,pos as
 			(
@@ -267,7 +267,7 @@ from
 		,pr as 
 			(
 			select distinct p.model, cbm.cat, p.product_name
-			from products_raw p 
+			from lookups.pims_products p 
 			join cat_by_model cbm 
 			on p.model = cbm.model
 			)
@@ -314,9 +314,10 @@ from
 				,date_part('month',f.report_date) as oh_month
 				,date_part('year',f.report_date) as oh_year
 				,f.vendor_stock_id 
-			from forecast.fc_instock f
+			from forecast.fc_instock_current f
 			left join clean_data.master_com_list ml
 			on f.item_id = ml.item_id
+
 			)
 		,ams_ships as
 			(
@@ -453,8 +454,89 @@ from
 		on fcast.tool_id = home_owned.item_id
 )t1
 )
-
 ;
+
+
+/*START VIEW TO TABLE*/
+truncate forecast.forecast_agenda_tbl;
+insert into forecast.forecast_agenda_tbl ( 
+    fcast_id,
+	tool_id,
+    model,
+    cat,
+    product_name,
+    implimentation_code,
+    priority_code,
+    fcast_month,
+    fcast_year,
+    end_of_week_oh_unit,
+    on_order_unit,
+    fcast_units,
+    available_to_sell,
+    purchase_orders,
+    pos_units,
+    pos_sales,
+    pos_units_ly,
+    pos_sales_ly,
+    s_sales,
+    s_sales_ly,
+    s_units,
+    s_units_ly,
+    l4_units,
+    l13_units,
+    l52_units,
+    ams_units,
+    current_cost,
+    ssr_id,
+    l4_units_ships,
+	l12_units_ships,
+    first_purchase_date,
+    ship_type,
+    fcast_units_customer,
+    on_promo_bool,
+    current_cost_customer,
+    s_units_ly_ytd
+)
+select     
+	fcast_id,
+	tool_id,
+    model,
+    cat,
+    product_name,
+    implimentation_code,
+    priority_code,
+    fcast_month,
+    fcast_year,
+    end_of_week_oh_unit,
+    on_order_unit,
+    fcast_units,
+    available_to_sell,
+    purchase_orders,
+    pos_units,
+    pos_sales,
+    pos_units_ly,
+    pos_sales_ly,
+    s_sales,
+    s_sales_ly,
+    s_units,
+    s_units_ly,
+    l4_units,
+    l13_units,
+    l52_units,
+    ams_units,
+    current_cost,
+    ssr_id,
+    l4_units_ships,
+	l12_units_ships,
+    first_purchase_date,
+    ship_type,
+    fcast_units_customer,
+    on_promo_bool,
+    current_cost_customer,
+    s_units_ly_ytd
+ from forecast.forecast_agenda_view;
+ /*END VIEW TO TABLE*/
+ ;
 
 /*START VIEW TO TABLE*/
 truncate forecast.forecast_agenda_tbl;

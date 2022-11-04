@@ -10,7 +10,7 @@ from
 		,row_number() over (partition by item_id, date_part('year',sale_date) order by count(date_part('year',sale_date)) desc) count_rank
 		--count_rank ranks the most popular retail_price for the years 
 		,count(date_part('year', sale_date)) as num_times_at_retail
-		--just a check. see how many times the retail sold during that yera
+		--just a check. see how many times the retail sold during that year
 	
 	from retail_link_pos 
 	where 1=1

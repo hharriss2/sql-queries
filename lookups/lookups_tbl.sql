@@ -45,7 +45,7 @@ from
 	select distinct
 	 	mv.model_name
 	 	,coalesce(p.wl_model, kl.wl_model_name) as wl_model
-	 	,coalesce(ml.item_id, kl.tool_id::integer) as item_id
+	 	,coalesce(ml.item_id, kl.tool_id::bigint) as item_id
 		,coalesce(p.color, kl.color) as color
 		,cbm.cat
 		,cbm.sub_cat
@@ -76,17 +76,17 @@ left join
     --we handle this in 2 different tables becasue we don't want to colaesce join on our model then kevins. Seems less efficient
 	with 
 		tv as (
-			  select tool_id::integer, tool_id_id
+			  select tool_id::bigint, tool_id_id
 			  from tool_id_view
 			  where tool_id ~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$'
 			  )
 		,tbt as
-			(select tool_id::integer, brand_name
+			(select tool_id::bigint, brand_name
 			from lookups.tool_brand_tbl
 			)
 		,tpn as 
 			(
-			select tool_id::integer, product_name
+			select tool_id::bigint, product_name
 			from lookups.tool_pn_tbl
 			)
 		,g as 

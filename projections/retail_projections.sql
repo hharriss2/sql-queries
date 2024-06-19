@@ -83,7 +83,7 @@ and ((projected_aur *.1)::numeric(10,0)) * 10 = aur
 
 
 --INSERT RESULTS INTO THE TABLE
-truncate projections.retail_projectoin_tbl;
+truncate projections.retail_projection_tbl;
 insert into projections.retail_projection_tbl(
 item_id
 ,projected_aur

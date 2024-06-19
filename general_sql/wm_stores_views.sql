@@ -416,7 +416,7 @@ select  distinct ssa.id
         ,coalesce(sl.current_item_num::integer,ssa.prime_item_nbr) as item_id
 --      ,wmc.item_num
         --temporary columns--
-        ,coalesce(wmcbid.item_id,sl.item_id::text, pr.item_id) as base_id 
+        ,coalesce(sl.item_id::text,wmcbid.item_id, pr.item_id) as base_id 
         ,cbm.cat
         ,cbm.sub_cat
         ,coalesce(sl.division, pr.division)  as division

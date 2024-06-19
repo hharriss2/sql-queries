@@ -11,10 +11,11 @@ select
 	,end_of_week_oh_unit
 	,on_order_unit
 	,fcast_units
-	,case 
-		when fcast_month <date_part('month',now()) and fcast_year = date_part('year',now()) 
-		then 0 
-		else lag(available_to_sell) over (order by fcast_id) end as available_to_sell
+--	,case 
+--		when fcast_month <date_part('month',now()) and fcast_year = date_part('year',now()) 
+--		then 0 
+--		else lag(available_to_sell) over (order by fcast_id) end as available_to_sell
+	,lag(available_to_sell) over (order by fcast_id) as available_to_sell
 	,purchase_orders
 	,pos_units
 	,pos_sales
@@ -150,6 +151,7 @@ from
 			 when fac.units = 0 then fcast_units
 			 else fac.units 
 		 end) as fcast_units_customer
+		 ,fa.fcast_units as fcast_units_current
 		,fhist.l4_units
 		,fhist.l12_units
 		,fhist.ams_units
@@ -180,7 +182,7 @@ from
 			,sum(total_units_ly) as total_units_ly
 			,sum(total_sales_ly) as total_sales_ly
 		from(
-				select tool_id::integer
+				select tool_id::bigint
 					,cl.model
 					,date_part('month', sale_date)::integer as pos_month
 					,date_part('year', sale_date)::integer as pos_year
@@ -209,7 +211,7 @@ from
 				from pos_reporting.retail_sales rs
 				left join clean_data.com_product_list cl
 				on rs.tool_id = cl.item_id::text
-				group by tool_id::integer
+				group by tool_id::bigint
 					,cl.model
 					,date_part('month', sale_date)::integer
 					,date_part('year', sale_date)::integer
@@ -344,7 +346,7 @@ from
 			,on_order_unit
 			,fcast_units
 			,coalesce(lead(ats_qty,1) over (order by fcast_id),0) +
-			coalesce((sum(ats_qty) over (partition by fcast.model order by fcast_id) ) - (sum(fcast_units) over (partition by fcast.model order by fcast_id)),0) as available_to_sell
+			coalesce((sum(ats_qty) over (partition by fcast.model order by fcast_id) ) - (sum(fcast_units_current) over (partition by fcast.model order by fcast_id)),0) as available_to_sell
 			,purchase_orders
 			--1 is TY Jan-Now
 			-- 2 Next month- End of Year
@@ -457,86 +459,7 @@ from
 ;
 
 
-/*START VIEW TO TABLE*/
-truncate forecast.forecast_agenda_tbl;
-insert into forecast.forecast_agenda_tbl ( 
-    fcast_id,
-	tool_id,
-    model,
-    cat,
-    product_name,
-    implimentation_code,
-    priority_code,
-    fcast_month,
-    fcast_year,
-    end_of_week_oh_unit,
-    on_order_unit,
-    fcast_units,
-    available_to_sell,
-    purchase_orders,
-    pos_units,
-    pos_sales,
-    pos_units_ly,
-    pos_sales_ly,
-    s_sales,
-    s_sales_ly,
-    s_units,
-    s_units_ly,
-    l4_units,
-    l13_units,
-    l52_units,
-    ams_units,
-    current_cost,
-    ssr_id,
-    l4_units_ships,
-	l12_units_ships,
-    first_purchase_date,
-    ship_type,
-    fcast_units_customer,
-    on_promo_bool,
-    current_cost_customer,
-    s_units_ly_ytd
-)
-select     
-	fcast_id,
-	tool_id,
-    model,
-    cat,
-    product_name,
-    implimentation_code,
-    priority_code,
-    fcast_month,
-    fcast_year,
-    end_of_week_oh_unit,
-    on_order_unit,
-    fcast_units,
-    available_to_sell,
-    purchase_orders,
-    pos_units,
-    pos_sales,
-    pos_units_ly,
-    pos_sales_ly,
-    s_sales,
-    s_sales_ly,
-    s_units,
-    s_units_ly,
-    l4_units,
-    l13_units,
-    l52_units,
-    ams_units,
-    current_cost,
-    ssr_id,
-    l4_units_ships,
-	l12_units_ships,
-    first_purchase_date,
-    ship_type,
-    fcast_units_customer,
-    on_promo_bool,
-    current_cost_customer,
-    s_units_ly_ytd
- from forecast.forecast_agenda_view;
- /*END VIEW TO TABLE*/
- ;
+
 
 /*START VIEW TO TABLE*/
 truncate forecast.forecast_agenda_tbl;

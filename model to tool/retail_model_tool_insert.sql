@@ -28,7 +28,21 @@ and  rsmax.latest_sale_date = rs1.sale_date
 )
 ,its as  --item scrape (retail scrape)
 ( -- list of the item id and model info from the scrape data
-select * 
+select
+	item_id
+	,product_name
+	,manufacturer_name
+	,case
+		when model_name like 'MS%'
+		then null
+		when model_name like 'BH%'
+		then null
+		when model_name = 'Credenza'
+		then null
+		else model_name
+		end as model_name
+	,upc
+	,base_id
 from scrape_data.latest_item_scrape
 where item_id in  -- only trying to match .com retail sale items
 	(select distinct tool_id::bigint
@@ -41,6 +55,7 @@ and model_name is not null
 ( -- model,item id, and division relationship
 select * 
 from clean_data.ships_model_tool_insert
+where item_id_seq =1
 )
 ,wc as --walmart catalog
 (
@@ -84,5 +99,6 @@ left join sm
 on rs.item_id = sm.item_id
 left join wcm
 on wcm.item_id = rs.item_id
+
 )
 ;

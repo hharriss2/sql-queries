@@ -1,3 +1,4 @@
+
 --view used to insert into the ships model tool table
 create or replace view clean_data.ships_model_tool_insert as 
 (
@@ -39,12 +40,22 @@ select model
 	,division
 	,row_number() over (partition by model order by latest_ship_date desc) as model_seq -- ranking the latest to oldest combo for a model 
 	,ltrim(upc,'0')::bigint as upc_key-- create upc as a bigint
+	,row_number() over (partition by item_id order by latest_ship_date desc) as item_id_seq_s1
+	
 from s
 )
-select * 
+select
+	model
+	,upc
+	,item_id
+	,latest_ship_date
+	,division
+	,model_seq
+	,upc_key
+	,case --used to filter to item id with most recent shipment and its model
+		when item_id is null then 1 
+		else item_id_seq_s1
+		end as item_id_seq
 from max_model
 where model_seq =1 -- 1 will show the latest record for the model tool combo
-
-
-)
-;
+);

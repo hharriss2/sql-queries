@@ -97,7 +97,7 @@ where 1=1
 select 
 	ssa.id
 	,coalesce(smax2.prime_item_nbr, ssa.prime_item_nbr) as prime_item_nbr
-	,smax1.prime_item_desc as new_prime_item_desc
+	,smax1.prime_item_desc as prime_item_desc
 	,ssa.item_nbr
 	,ssa.item_flags
 	,ssa.item_desc_1

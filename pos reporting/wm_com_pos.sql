@@ -89,6 +89,7 @@ select
     then 2
     else null
     end as item_type_id
+    ,mcl.is_top_100_item
 from rs
 left join mcl
 on rs.item_id = mcl.item_id

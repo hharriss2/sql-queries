@@ -23,6 +23,7 @@ SELECT
     ,is_put
     ,item_type_id
     ,account_manager_id
+    ,is_top_100_item
 FROM pos_reporting.wm_com_pos
 )
 , tv AS (
@@ -109,6 +110,7 @@ from power_bi.wm_budget_calendar
     ,bid.tool_id_id AS base_id_id
     ,rs.item_type_id
     ,budcal.wm_cal_id as wm_budget_cal_id
+    ,is_top_100_item
     ,rs.is_put
     ,CASE
         WHEN wmcal.wc_id_ty IS NULL THEN 0

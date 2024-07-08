@@ -19,6 +19,7 @@ SELECT
     ,brand_name
     ,item_stat_id
     ,group_id_id
+    ,is_top_100_item
 FROM pos_reporting.wm_stores_pos
 )
 ,wc_ty AS 
@@ -124,6 +125,7 @@ SELECT ssa.id
     ,bid.tool_id_id AS base_id_id
     ,1 AS item_type_id
     ,budcal.wm_cal_id as wm_budget_cal_id
+    ,is_top_100_item
     ,ssa.item_stat_id
     ,CASE
         WHEN wmcal.wc_id_ty IS NULL THEN 0

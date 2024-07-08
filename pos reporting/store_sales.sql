@@ -91,12 +91,18 @@ from smax_s3 s3
 where 1=1
 
 )
+,mcl as --master list
+( -- only bringing in item numbers for the dataset
+select *
+from clean_data.master_com_list mcl
+where retail_type_id = 1--store type id 
+)
 
 ,details as 
 (
 select 
 	ssa.id
-	,coalesce(smax2.prime_item_nbr, ssa.prime_item_nbr) as prime_item_nbr
+	,coalesce(mcl.current_item_num,smax2.prime_item_nbr, ssa.prime_item_nbr) as prime_item_nbr
 	,smax1.prime_item_desc as prime_item_desc
 	,ssa.item_nbr
 	,ssa.item_flags
@@ -113,19 +119,24 @@ select
 	,ssa.pos_qty
 	,ssa.pos_sales
 	,ssa.curr_repl_instock
-	,case
-		when smax2.prime_item_nbr is null
+	,case -- looks to see if the item number was taken from the smax table. 
+		when mcl.current_item_num is not null
+		then 1 -- existing record in this field means the item number has been overwritten 
+		when smax2.prime_item_nbr is null -- if null, no overwriting 
 		then 0
-		when ssa.prime_item_nbr = smax2.prime_item_nbr 
+		when ssa.prime_item_nbr != smax2.prime_item_nbr -- if the original item number and prime item number dont match, it's overwritten
 		then 1
 		else 0
 	end as is_overwriten_item_nbr
+	,ssa.prime_item_nbr as original_item_num
 from ssa
-join smax smax1 -- first join for smax
+join smax smax1 -- first join for smax.
 on ssa.prime_item_nbr = smax1.prime_item_nbr -- gives the prime item nbr the most current description
 left join smax smax2 --second join for smax -- assigned the prime item nbr the latest nbr
 on smax1.prime_item_desc = smax2.prime_item_desc
-and smax2.is_overwriting_item_num =1
+and smax2.is_overwriting_item_num =1 -- only joins to item numbers that are being overwritten
+left join  mcl -- bringing in cleaned up store data for finding most current item number
+on ssa.prime_item_nbr = mcl.item_id
 )
 select * 
 from details

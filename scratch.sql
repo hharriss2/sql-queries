@@ -1,75 +1,127 @@
-with w AS (
-         SELECT DISTINCT
-                CASE
-                    WHEN dupe_lookup.item_description IS NOT NULL THEN dupe_lookup.item_num
-                    ELSE all_item_nbrs.prime_item_nbr::integer
-                END AS item_num,
-            recent_item_desc.prime_item_desc,
-                CASE
-                    WHEN dupe_lookup.item_description IS NOT NULL THEN dupe_lookup.item_id
-                    WHEN dupe_lookup.item_description IS NULL THEN model_tool_1.tool_id::text
-                    ELSE w_1.item_id
-                END AS item_id,
-            COALESCE(dupe_lookup.upc, w_1.upc) AS upc,
-            w_1.supplier_stock_id
-           FROM ( SELECT DISTINCT sales_stores_auto.prime_item_desc,
-                    max(sales_stores_auto.daily) AS date_compare
-                   FROM sales_stores_auto
-                  WHERE sales_stores_auto.fineline_description <> 'DOTCOM ONLY'::text
-                  GROUP BY sales_stores_auto.prime_item_desc) recent_item_desc
-             JOIN ( SELECT DISTINCT sales_stores_auto.prime_item_nbr,
-                    sales_stores_auto.prime_item_desc,
-                    sales_stores_auto.daily
-                   FROM sales_stores_auto
-                  WHERE sales_stores_auto.fineline_description <> 'DOTCOM ONLY'::text) all_item_nbrs ON recent_item_desc.prime_item_desc = all_item_nbrs.prime_item_desc
-             LEFT JOIN wm_catalog2 w_1 ON w_1.item_num = all_item_nbrs.prime_item_nbr::integer
-             LEFT JOIN ( SELECT DISTINCT s.model,
-                    s.tool_id
-                   FROM ( SELECT ships.model,
-                            max(ships.date_shipped) AS date_compare
-                           FROM ships_schema.ships
-                          GROUP BY ships.model) ship_model
-                     JOIN ships_schema.ships s ON s.model::text = ship_model.model::text
-                  WHERE 1 = 1 AND s.date_shipped = ship_model.date_compare AND (s.retailer::text = ANY (ARRAY['Walmart.com'::character varying::text, 'Walmart Stores'::character varying::text])) AND s.tool_id::text <> '0'::text) model_tool_1 ON model_tool_1.tool_id::text = w_1.item_id
-             LEFT JOIN ( SELECT dupe_store_records.item_num,
-                    dupe_store_records.item_description,
-                    dupe_store_records.item_id,
-                    dupe_store_records.upc
-                   FROM ( SELECT DISTINCT w_2.item_num,
-                            w_2.item_description,
-                            w_2.item_id,
-                            w_2.upc
-                           FROM wm_catalog2 w_2
-                          WHERE (w_2.item_description IN ( SELECT t1.prime_item_desc
-                                   FROM ( SELECT DISTINCT all_item_nbrs_1.prime_item_nbr,
-    recent_item_desc_1.prime_item_desc
-   FROM ( SELECT DISTINCT sales_stores_auto.prime_item_desc,
-      max(sales_stores_auto.daily) AS date_compare
-     FROM sales_stores_auto
-    WHERE sales_stores_auto.fineline_description <> 'DOTCOM ONLY'::text
-    GROUP BY sales_stores_auto.prime_item_desc) recent_item_desc_1
-     JOIN ( SELECT DISTINCT sales_stores_auto.prime_item_nbr,
-      sales_stores_auto.prime_item_desc,
-      sales_stores_auto.daily
-     FROM sales_stores_auto
-    WHERE sales_stores_auto.fineline_description <> 'DOTCOM ONLY'::text) all_item_nbrs_1 ON recent_item_desc_1.prime_item_desc = all_item_nbrs_1.prime_item_desc
-  WHERE recent_item_desc_1.date_compare = all_item_nbrs_1.daily) t1
-                                  GROUP BY t1.prime_item_desc
-                                 HAVING count(t1.prime_item_desc) > 1))) dupe_store_records
-                  WHERE (dupe_store_records.item_id IN ( SELECT DISTINCT s.tool_id
-                           FROM ( SELECT ships.model,
-                                    max(ships.date_shipped) AS date_compare
-                                   FROM ships_schema.ships
-                                  GROUP BY ships.model) ship_model
-                             JOIN ships_schema.ships s ON s.model::text = ship_model.model::text
-                          WHERE 1 = 1 AND s.date_shipped = ship_model.date_compare AND (s.retailer::text = ANY (ARRAY['Walmart.com'::character varying::text, 'Walmart Stores'::character varying::text])) AND s.tool_id::text <> '0'::text)) AND dupe_store_records.item_num <> 569020027) dupe_lookup ON dupe_lookup.item_description = w_1.item_description
-             LEFT JOIN ( SELECT DISTINCT s.tool_id,
-                    ship_upc.upc
-                   FROM ( SELECT ships.upc,
-                            max(ships.date_shipped) AS date_compare
-                           FROM ships_schema.ships
-                          GROUP BY ships.upc) ship_upc
-                     JOIN ships_schema.ships s ON s.upc::text = ship_upc.upc::text
-                  WHERE 1 = 1 AND s.date_shipped = ship_upc.date_compare AND (s.retailer::text = ANY (ARRAY['Walmart.com'::character varying::text, 'Walmart Stores'::character varying::text])) AND s.tool_id::text <> '0'::text) tool_upc ON COALESCE(tool_upc.tool_id::text = dupe_lookup.item_id, tool_upc.tool_id::text = model_tool_1.tool_id::text, tool_upc.tool_id::text = w_1.item_id)
-          WHERE recent_item_desc.date_compare = all_item_nbrs.daily AND all_item_nbrs.prime_item_nbr <> '569020027'::text
-        )
+create or replace view pos_reporting.budget_text as 
+(
+select
+d.phone,
+d.email,
+e.wm_week as wm_week,
+to_char(date, 'mm.dd') as date,
+'$' || to_char(dot_com_yesterday::numeric(10,0) , 'FM999,999,999') as dot_com_yesterday,
+'$' || to_char(dot_com_dsv::numeric(10,0) , 'FM999,999,999') as dot_com_dsv,
+'$' || to_char(dot_com_bulk::numeric(10,0) , 'FM999,999,999') as dot_com_bulk,
+'$' || to_char(dot_com_di::numeric(10,0) , 'FM999,999,999') as dot_com_di,
+'$' || to_char(dot_com_mtd::numeric(10,0) , 'FM999,999,999') as dot_com_mtd,
+'$' || to_char(dot_com_mo_bud::numeric(10,0) , 'FM999,999,999') as dot_com_mo_bud,
+'$' || to_char(dot_com_qtd::numeric(10,0) , 'FM999,999,999') as dot_com_qtd,
+'$' || to_char(dot_com_qrt_bud::numeric(10,0) , 'FM999,999,999') as dot_com_qrt_bud,
+'$' || to_char(dot_com_ytd::numeric(10,0) , 'FM999,999,999') as dot_com_ytd,
+'$' || to_char(dot_com_ytd_bud::numeric(10,0) , 'FM999,999,999') as dot_com_ytd_bud,
+'$' || to_char(stores_yesterday::numeric(10,0) , 'FM999,999,999') as stores_yesterday,
+'$' || to_char(stores_bm::numeric(10,0) , 'FM999,999,999') as stores_bm,
+'$' || to_char(stores_bulk::numeric(10,0) , 'FM999,999,999') as stores_bulk,
+'$' || to_char(stores_di::numeric(10,0) , 'FM999,999,999') as stores_di,
+'$' || to_char(stores_mtd::numeric(10,0) , 'FM999,999,999') as stores_mtd,
+'$' || to_char(stores_mo_bud::numeric(10,0) , 'FM999,999,999') as stores_mo_bud,
+'$' || to_char(stores_qtd::numeric(10,0) , 'FM999,999,999') as stores_qtd,
+'$' || to_char(stores_qrt_bud::numeric(10,0) , 'FM999,999,999') as stores_qrt_bud,
+'$' || to_char(stores_ytd::numeric(10,0) , 'FM999,999,999') as stores_ytd,
+'$' || to_char(stores_ytd_bud::numeric(10,0) , 'FM999,999,999') as stores_ytd_bud,
+'$' || to_char(omni_yesterday::numeric(10,0) , 'FM999,999,999') as omni_yesterday,
+'$' || to_char(omni_mtd::numeric(10,0) , 'FM999,999,999') as omni_mtd,
+'$' || to_char(omni_mo_bud::numeric(10,0) , 'FM999,999,999') as omni_mo_bud,
+'$' || to_char(omni_qtd::numeric(10,0) , 'FM999,999,999') as omni_qtd,
+'$' || to_char(omni_qrt_bud::numeric(10,0) , 'FM999,999,999') as omni_qrt_bud,
+'$' || to_char(omni_ytd::numeric(10,0) , 'FM999,999,999') as omni_ytd,
+'$' || to_char(omni_ytd_bud::numeric(10,0) , 'FM999,999,999') as omni_ytd_bud,
+'$' || to_char(all_yesterday::numeric(10,0) , 'FM999,999,999') as all_yesterday,
+'$' || to_char(all_mtd::numeric(10,0) , 'FM999,999,999') as all_mtd,
+'$' || to_char(all_qtd::numeric(10,0) , 'FM999,999,999') as all_qtd,
+'$' || to_char(all_ytd::numeric(10,0) , 'FM999,999,999') as all_ytd,
+
+
+'WM Week = '||e.wm_week
+||E'\n'||E'\n'||
+'---------------------'
+||E'\n'||E'\n'||
+'Walmart.com'||E'\n'||to_char(date, 'mm.dd')||': $'||to_char(dot_com_yesterday,'FM999,999,999')||E'\n'||'DSV: $'||to_char(dot_com_dsv,'FM999,999,999')||E'\n'||'Bulk: $'||to_char(dot_com_bulk,'FM999,999,999')||E'\n'||'DI: $'||to_char(dot_com_di,'FM999,999,999')||E'\n'||E'\n'||'MTD: $'||to_char(dot_com_mtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(dot_com_mo_bud,'FM999,999,999')||E'\n'||E'\n'||'QTD: $'||to_char(dot_com_qtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(dot_com_qrt_bud,'FM999,999,999')||E'\n'||E'\n'||'YTD: $'||to_char(dot_com_ytd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(dot_com_ytd_bud,'FM999,999,999')
+||E'\n'||E'\n'||
+'---------------------'
+||E'\n'||E'\n'||
+'Walmart Stores'||E'\n'||to_char(date, 'mm.dd')||': $'||to_char(stores_yesterday,'FM999,999,999')||E'\n'||'B&M: $'||to_char(stores_bm,'FM999,999,999')||E'\n'||'DI: $'||to_char(stores_di,'FM999,999,999')||E'\n'||E'\n'||'MTD: $'||to_char(stores_mtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(stores_mo_bud,'FM999,999,999')||E'\n'||E'\n'||'QTD: $'||to_char(stores_qtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(stores_qrt_bud,'FM999,999,999')||E'\n'||E'\n'||'YTD: $'||to_char(stores_ytd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(stores_ytd_bud,'FM999,999,999')
+||E'\n'||E'\n'||
+'---------------------'
+||E'\n'||E'\n'||
+'Omni Channel'||E'\n'||to_char(date, 'mm.dd')||': $'||to_char(omni_yesterday,'FM999,999,999')||E'\n'||E'\n'||'MTD: $'||to_char(omni_mtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(omni_mo_bud,'FM999,999,999')||E'\n'||E'\n'||'QTD: $'||to_char(omni_qtd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(omni_qrt_bud,'FM999,999,999')||E'\n'||E'\n'||'YTD: $'||to_char(omni_ytd,'FM999,999,999')||E'\n'||'Bud: $'||to_char(omni_ytd_bud,'FM999,999,999')
+
+	
+as final
+
+from 
+	(select
+	date(timezone('CST', now())) -1 as date,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in( 'Walmart.com','SamsClub.com') then sales end),0) as dot_com_yesterday,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in('Walmart Stores','Sam''s Club') then sales end),0) as stores_yesterday,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then sales end),0) as omni_yesterday,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1  then sales end),0)
+as all_yesterday,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in( 'Walmart.com','SamsClub.com') and sale_type = 'Drop Ship' then sales end),0) as dot_com_dsv,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in( 'Walmart.com','SamsClub.com') and sale_type = 'Bulk' then sales end),0) as dot_com_bulk,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in( 'Walmart.com','SamsClub.com') and sale_type = 'Direct Import' then sales end),0) as dot_com_di,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in('Walmart Stores','Sam''s Club') and sale_type = 'Brick & Mortar' then sales end),0) as stores_bm,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in('Walmart Stores','Sam''s Club') and sale_type = 'Bulk' then sales end),0) as stores_bulk,
+	COALESCE(sum(case when date_shipped = date(timezone('CST', now())) -1 and retailer in('Walmart Stores','Sam''s Club') and sale_type = 'Direct Import' then sales end),0) as stores_di,
+	COALESCE(sum(case when date_shipped >= date_trunc('year', current_date) and retailer in( 'Walmart.com','SamsClub.com') then sales end),0) as dot_com_ytd,
+	COALESCE(sum(case when date_shipped >= date_trunc('year', current_date) and retailer in('Walmart Stores','Sam''s Club') then sales end),0) as stores_ytd,
+	COALESCE(sum(case when date_shipped >= date_trunc('year', current_date) and retailer IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then sales end),0) as omni_ytd,
+	COALESCE(sum(case when date_shipped >= date_trunc('month', current_date) and retailer in( 'Walmart.com','SamsClub.com') then sales end),0) as dot_com_mtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('month', current_date) and retailer in('Walmart Stores','Sam''s Club') then sales end),0) as stores_mtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('month', current_date) and retailer IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then sales end),0) as omni_mtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('quarter', current_date) and retailer in( 'Walmart.com','SamsClub.com') then sales end),0) as dot_com_qtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('quarter', current_date) and retailer in('Walmart Stores','Sam''s Club') then sales end),0) as stores_qtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('quarter', current_date) and retailer IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then sales end),0) as omni_qtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('year', current_date) then sales end),0) 
+as all_ytd,
+	COALESCE(sum(case when date_shipped >= date_trunc('month', current_date)then sales end),0) 
+as all_mtd,
+	COALESCE(sum(case when date_shipped >= date_trunc('quarter', current_date) then sales end),0) 
+as all_qtd
+	from ships_schema.ships s
+	where 1=1
+	--and retailer IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club')
+	and s.model NOT IN ('')) a
+	left join (
+	select
+	date(timezone('CST', now())) - 1 as budget_date,
+	COALESCE(sum(case when month = date_trunc('month', current_date) and channel in( 'Walmart.com','SamsClub.com') then budget end),0) as dot_com_mo_bud,
+	COALESCE(sum(case when month = date_trunc('month', current_date) and channel in('Walmart Stores','Sam''s Club') then budget end),0) as stores_mo_bud,
+	COALESCE(sum(case when month = date_trunc('month', current_date) and channel IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then budget end),0) as omni_mo_bud,
+	COALESCE(sum(case when date_part('quarter',current_date) = date_part('quarter',month) and channel in( 'Walmart.com','SamsClub.com') then budget end),0) as dot_com_qrt_bud,
+	COALESCE(sum(case when date_part('quarter',current_date) = date_part('quarter',month) and channel in('Walmart Stores','Sam''s Club') then budget end),0) as stores_qrt_bud,
+	COALESCE(sum(case when date_part('quarter',current_date) = date_part('quarter',month) and channel IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then budget end),0) as omni_qrt_bud,
+	COALESCE(sum(case when month >= date_trunc('year', current_date) and channel in( 'Walmart.com','SamsClub.com') then budget end),0) as dot_com_ytd_bud,
+	COALESCE(sum(case when month >= date_trunc('year', current_date) and channel in('Walmart Stores','Sam''s Club') then budget end),0) as stores_ytd_bud,
+	COALESCE(sum(case when month >= date_trunc('year', current_date) and channel IN ('Walmart.com','Walmart Stores','SamsClub.com','Sam''s Club') then budget end),0) 
+as omni_ytd_bud,
+	COALESCE(sum(case when date_part('quarter',current_date) = date_part('quarter',month) then budget end),0) as all_qrt_bud,
+	COALESCE(sum(case when month = date_trunc('month', current_date) then budget end),0) 
+as all_mo_bud,
+	COALESCE(sum(case when month >= date_trunc('year', current_date) then budget end),0) 
+as all_ytd_bud
+	from budget_2024) c
+	on a.date = c.budget_date
+	join (
+	select
+	date(timezone('CST', now())) - 1 as contact_date,
+	name,
+	phone,
+	email
+	from contacts
+	 ) d
+	on a.date = d.contact_date
+	left join (
+	select
+	date as wm_date,
+	wm_week
+	from wm_calendar ) e
+	on a.date = e.wm_date
+)
+;

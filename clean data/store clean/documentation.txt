@@ -1,0 +1,11 @@
+store_product_list_view feeds into clean_data.stores_product_list
+    - first is select distinct item num, item id, name, upc, division
+    -then another insert on select distinct related item num, item id , name ,upc, division
+    --^^ step 5 of the master com workflow
+next store_product_list_insert_view feeds into the SPL tables
+    -- add new ones, update existing ones
+
+SQL OVERVIEW
+store_product_list_view -- finds item id, model , etc based on item numbers we want to look at, Item 360 data, and the current cleaned up master com list
+    --because the com clean up workflow happens first, the item id's in Master Com table will have the most recent models, divisions, etc.
+    

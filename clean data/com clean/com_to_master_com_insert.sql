@@ -1,4 +1,5 @@
 --this view manipulates the com product list a little more before transitioning it into master com
+--this view gets inserted first, then the store logic gets applied 
 create or replace view clean_data.com_to_master_com_insert as 
 (
 with sm as -- ship max
@@ -24,6 +25,7 @@ with sm as -- ship max
   		end as division_name
   	,cpl.product_name
   	,cpl.is_scrape_product_name
+	,2 as retailer_type_id
   from clean_data.com_product_list cpl
   left join clean_data.master_com_list mcl
   on cpl.item_id = mcl.item_id

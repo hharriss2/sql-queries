@@ -1,0 +1,13 @@
+covers the pipelining for master com table 
+
+first, the com product list feeds into the master com 
+second, stores product list feeds into the master com
+third, update brand name using lookups.tool_brand
+fourth, lookup tables for com & stores will feed into master com
+    --overwrites certian item id's, brands, models, etc. 
+
+
+the master com list holds cleaned up data for each item id, model, & item num. 
+should be unique item num & item id for the table. 
+models aren't unique
+

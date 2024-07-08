@@ -1,0 +1,13 @@
+Covers the workflow for the different views in this folder
+
+-ships_model_tool is used by  retail_model_tool
+--retail_model_tool is used by com_to_master_com_insert
+so it goes:
+ships_model_tool_insert
+    retail_model_tool_insert
+        ships_model_tool_insert (foundation of the view)
+
+OVERVIEW OF QUERIES:
+    ships_model_tool_insert - only uses shipping tables to identify a unique model & it's most relative item id
+    ships_model_tool_insert - uses SMTI, also pulls scrape data, item 360, and  POS data to determine the most relevant info for item id's
+    com_to_master_com_insert - uses RMTI, compares to the master com cleaned up list. adds new item id's and updated info on existing ones

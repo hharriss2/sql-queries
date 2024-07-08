@@ -1,5 +1,8 @@
 
---view used to insert into the ships model tool table
+--view used to populate retail_model_tool_insert view. 
+	--ships_model_tool_insert ->
+		--retail_model_tool_insert ->
+			--com_to_master_com_insert 
 create or replace view clean_data.ships_model_tool_insert as 
 (
 --cleaning up shipment data as much as we can 

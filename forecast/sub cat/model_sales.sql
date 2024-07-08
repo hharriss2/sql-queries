@@ -20,6 +20,8 @@ with model_months as
 	when date_part('year',date_shipped) = 2020 then (.5 * sum(units))::bigint
 	when date_part('year',date_shipped) = 2021 then (.7 * sum(units))::bigint
 	when date_part('year',date_shipped) = 2022 then (.9 * sum(units))::bigint
+	when date_part('year',date_shipped) = 2023 then (.9 * sum(units))::bigint
+	when date_part('year',date_shipped) = 2024 then (.9 * sum(units))::bigint
 	end as total_units-- needs to be updated as new years come
 	from ships_schema.ships
 	-- where date_part('year',date_shipped) = 2021

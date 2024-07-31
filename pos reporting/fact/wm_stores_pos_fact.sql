@@ -20,6 +20,7 @@ SELECT
     ,item_stat_id
     ,group_id_id
     ,is_top_100_item
+    ,category_id
 FROM pos_reporting.wm_stores_pos
 )
 ,wc_ty AS 
@@ -65,19 +66,17 @@ SELECT
     ,division_name
 FROM power_bi.divisions_view
 )
-, tv AS 
-(
+, tv AS (
 SELECT 
     item_id as tool_id
-    ,item_id_id as tool_id_id
-FROM power_bi.dim_item_id_view_pos
+    ,item_id_id::bigint as tool_id_id
+FROM power_bi.dim_wm_item_id
 )
-,pnv AS 
-(
-SELECT
-    product_name
-    ,product_name_id
-FROM power_bi.product_name_view_pbix
+, pnv AS (
+SELECT 
+	product_name,
+    product_name_id::bigint as product_name_id
+FROM power_bi.dim_product_names
 )
 ,bid AS 
 (
@@ -88,9 +87,9 @@ FROM power_bi.dim_item_id_view_pos
 )
 , bn AS 
 (
-SELECT brand_name.brand_id,
-brand_name.brand_name
-FROM power_bi.brand_name
+SELECT  brand_id::bigint as brand_id,
+    brand_name
+FROM power_bi.dim_brand_name
 )
 ,rt AS 
 (
@@ -98,11 +97,10 @@ SELECT retail_type.retail_type_id,
 retail_type.retail_type
 FROM power_bi.retail_type
 )
-,mv AS 
-(
-SELECT model_view_pbix.model_name,
-model_view_pbix.model_id
-FROM power_bi.model_view_pbix
+, mv AS (
+    SELECT model_name,
+        model_id::bigint as model_id
+    FROM power_bi.dim_models
 )
 ,budcal as --walmart budget calendar
 ( -- assign the walmart calendar id for the budget calendar
@@ -125,6 +123,7 @@ SELECT ssa.id
     ,bid.tool_id_id AS base_id_id
     ,1 AS item_type_id
     ,budcal.wm_cal_id as wm_budget_cal_id
+    ,ssa.category_id
     ,is_top_100_item
     ,ssa.item_stat_id
     ,CASE

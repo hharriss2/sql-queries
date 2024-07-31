@@ -24,23 +24,24 @@ SELECT
     ,item_type_id
     ,account_manager_id
     ,is_top_100_item
+    ,category_id
 FROM pos_reporting.wm_com_pos
 )
 , tv AS (
 SELECT 
     item_id as tool_id
-    ,item_id_id as tool_id_id
-FROM power_bi.dim_item_id_view_pos
+    ,item_id_id::bigint as tool_id_id
+FROM power_bi.dim_wm_item_id
 )
 , pnv AS (
-    SELECT product_name_view_pbix.product_name,
-    product_name_view_pbix.product_name_id
-    FROM power_bi.product_name_view_pbix
+    SELECT product_name,
+        product_name_id::bigint as product_name_id
+    FROM power_bi.dim_product_names
 )
 , mv AS (
-    SELECT model_view_pbix.model_name,
-    model_view_pbix.model_id
-    FROM power_bi.model_view_pbix
+    SELECT model_name,
+        model_id::bigint as model_id
+    FROM power_bi.dim_models
 )
 , wc_ty AS (
     SELECT DISTINCT t1.wm_date,
@@ -72,9 +73,9 @@ FROM power_bi.dim_item_id_view_pos
         LEFT JOIN wc_ly ON wcv.wm_date = wc_ly.wm_date
 )
 , bn AS (
-    SELECT brand_name.brand_id,
-    brand_name.brand_name
-    FROM power_bi.brand_name
+    SELECT brand_id::bigint as brand_id,
+    brand_name
+    FROM power_bi.dim_brand_name
 )
 , d AS (
     SELECT divisions_view.division_id,
@@ -110,6 +111,7 @@ from power_bi.wm_budget_calendar
     ,bid.tool_id_id AS base_id_id
     ,rs.item_type_id
     ,budcal.wm_cal_id as wm_budget_cal_id
+    ,rs.category_id
     ,is_top_100_item
     ,rs.is_put
     ,CASE

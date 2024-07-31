@@ -1,66 +1,20 @@
-/*Finds the most recent scrape of wm products for the buy box*/
-
-create or replace view scrape_data.most_recent_scrape as (	
- SELECT DISTINCT sh.id,
-    sh.url,
-    sh.item_id,
-    sh.product_name,
-    sh.manufacturer_name,
-    sh.available,
-    sh.num_of_images,
-    coalesce(lt.model_name::text,sh.model_name::text) as model_name,
-    sh.category_path,
-    sh.category_path_name,
-    sh.upc,
-    sh.num_of_variants,
-    sh.price_retail,
-    sh.price_was,
-    sh.price_display_code,
-    sh.review_rating,
-    sh.review_count,
-    sh.free_shipping,
-    sh.two_day_shipping,
-    sh.shelf_position,
-    sh.est_days_shipped,
-    sh.enabled_freight_shipping,
-    sh.seller_name,
-    coalesce(cbid.base_id::text, sh.base_id::text) as base_id,
-    sh.description,
-    sh.inserted_at,
-    g.group_id,
-    ic.class,
-    lt.division,
-    lt.cat,
-    pc.early_date,
-    pc.recent_date,
-    pc.early_retail,
-    pc.recent_retail,
-    pc.recent_over_early_retail
-FROM scrape_data.scrape_tbl sh
-left join group_ids g
-on sh.item_id = g.tool_id
-LEFT JOIN lookups.current_base_id cbid
-on g.group_id = cbid.group_id
-left join item_class ic 
-on ic.tool_id::integer = sh.item_id
-left join
-	(select distinct model_name, division, cat, item_id
-	 from lookups.lookup_tbl
-	 ) lt
-on lt.item_id = sh.item_id
-left join scrape_data.price_compare pc 
-on sh.item_id = pc.item_id
-WHERE sh.date_inserted = (( 
-			SELECT max(sh_1.date_inserted) AS max
-           	FROM scrape_data.scrape_tbl sh_1
-           	)) 
-AND (
-	sh.item_id IN 
-		( 
-		SELECT item_id
-       	FROM lookups.tool_id_numeric
-       	)
-    )
+--powers the buy box report on BV sharing workspace
+--finds the most recent scrape for an item where the scraped data is found
+create or replace view scrape_data.most_recent_scrape as 
+(
+with mi as 
+(
+select distinct item_id, max(date_inserted) date_inserted
+from scrape_data.scrape_tbl
+where 1=1
+and date_inserted >= current_date - interval '30 days'
+and product_name is not null -- omits any items that the scraper did not find
+and product_name != 'Product not Found'
+group by item_id
 )
-;
-
+select s.*
+from scrape_data.scrape_tbl s
+join mi 
+on s.item_id = mi.item_id
+and mi.date_inserted = s.date_inserted
+)

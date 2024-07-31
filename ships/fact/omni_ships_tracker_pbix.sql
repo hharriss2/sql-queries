@@ -14,19 +14,8 @@ SELECT
 	,sale_type
 	,btrim(to_char(date_shipped::timestamp with time zone, 'Month'::text)) AS ship_month
 	,btrim(to_char(date_shipped::timestamp with time zone, 'YYYY'::text)) AS ship_year
-	,CASE
-		WHEN retailer_id = 5 THEN 23
-		WHEN retailer_id = 3 THEN 21
-		WHEN retailer_id = 2 THEN 22
-		WHEN category_id IS NULL THEN 24
-		ELSE category_id
-	END AS category_id
-	,CASE
-		WHEN retailer_id = 5 THEN 6
-		WHEN retailer_id = 3 THEN 6
-		WHEN retailer_id = 2 THEN 6
-		ELSE account_manager_id
-	END AS account_manager_id
+	,category_id
+	,account_manager_id
 from ships_schema.ships_view
 )
 SELECT

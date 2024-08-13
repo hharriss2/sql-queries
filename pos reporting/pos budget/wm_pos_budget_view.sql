@@ -16,7 +16,7 @@ select
 	,retail_type_id
 	,retail_type
 	,inserted_at
-	,row_number() over (partition by wm_cal_id, category_id, retail_type_id order by inserted_at ) as budget_version
+	,row_number() over (partition by wm_cal_id, category_id, retail_type_id order by inserted_at desc) as budget_version
 	--^#'s the forecast inserted in by the sales person. 1 being the earliest itteration
 --	,account_manager
 --	,category_name
@@ -36,12 +36,14 @@ select
 	,retail_type_id
 	,retail_type
 	,inserted_at
-	,budget_version
-	,case
-		when budget_version = max(budget_version) over (partition by wm_cal_id, category_id, retail_type_id) 
+	,dense_rank() over (order by budget_version desc) as budget_version --highest # means it's the latest version
+	--if budget has same wm date, category, retailer, we take the latest version of that
+	,case -- budget with 1 means it's the latest version. 
+		when budget_version = min(budget_version) over (partition by wm_cal_id, category_id, retail_type_id) 
 		then 1 -- 1 is true
 		else 0 -- 0 is false
 		end as is_latest_budget_version
+
 from bud
 )
 ;

@@ -43,7 +43,7 @@ select
 		end as model_name
 	,upc
 	,base_id
-from scrape_data.latest_item_scrape
+from scrape_data.most_recent_scrape
 where item_id in  -- only trying to match .com retail sale items
 	(select distinct tool_id::bigint
 	from pos_reporting.retail_sales
@@ -62,6 +62,7 @@ where item_id_seq =1
 select distinct
 	item_id::bigint as item_id
 	,ltrim(upc,'0')::bigint as upc_key
+	,product_name
 from wm_catalog
 where 1=1
 and  item_id ~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' -- removing any item id's that aren't # only
@@ -75,22 +76,25 @@ select
 wc.item_id
 ,sm.model
 ,sm.division
+,max(wc.product_name) as product_name
 from wc
-left join sm
+ join sm
 on wc.upc_key = sm.upc_key
+group by wc.item_id, sm.model,sm.division
 )
+
 ,mti as -- model tool insert
 ( -- finalized part of the query. 
 	--there are some values that are still null, but accounted for on the master tool upload
 	--because of this, we are joining MTI one last time to master com list, to override nulls
-select 
+select distinct
 	rs.item_id
 --	,its.model_name as retail_scrape_model
 --	,sm.model as ships_model
---	,wcm.model as  walmart_cat_model
+--	,wcm.mode      l as  walmart_cat_model
 	,coalesce(sm.model,wcm.model,its.model_name) as model_name -- prioritized shipment (our model), wm catalogs, then scrape datas model (possibly a white lable) 
 	,coalesce(sm.division,wcm.division) as division_name
-	,coalesce(its.product_name,rs.product_name) as product_name
+	,coalesce(its.product_name,wcm.product_name,rs.product_name) as product_name
     ,case
         when its.product_name is null
         then 0
@@ -115,7 +119,7 @@ select
 		else coalesce(mti.product_name, cpl.product_name)
 		end  as product_name
 	,coalesce(mti.is_scrape_product_name,cpl.is_scrape_product_name) as is_scrape_product_name
-from clean_data.com_product_list_insert_view mti
+from mti -- used to be clean_data.com_product_list_insert_view  I think?
 left join clean_data.com_product_list cpl
 on mti.item_id = cpl.item_id
 )

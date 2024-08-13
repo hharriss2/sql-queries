@@ -51,7 +51,7 @@ group by po_id
 )
 select 
 	(o2.po_id::text || coalesce(line_number + max_line_number, line_number))::bigint as dsv_order_id
-	,02.po_id
+	,o2.po_id
 	,order_date
 	,sku
 	,qty
@@ -59,6 +59,7 @@ select
 	,ship_type
 	,order_total
 	,coalesce(line_number + max_line_number, line_number) as line_number
+    ,now() as updated_on
 from orders2 o2
 left join ml 
 on o2.po_id = ml.po_id

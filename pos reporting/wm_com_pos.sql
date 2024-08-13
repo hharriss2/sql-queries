@@ -17,7 +17,7 @@ SELECT
     ,units
     ,sales
     ,is_put
-    ,2 AS retail_type_id
+    ,2 as retail_type_id
 FROM pos_reporting.retail_sales
 )
 ,mcl as --master com list
@@ -87,9 +87,12 @@ select
     then 1
     when item_type = 'DSV'
     then 2
+    when item_type = '3P'
+    then 4
     else null
     end as item_type_id
     ,mcl.is_top_100_item
+    ,rs.retail_type_id
 from rs
 left join mcl
 on rs.item_id = mcl.item_id

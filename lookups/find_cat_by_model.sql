@@ -1,3 +1,5 @@
+create view misc_views.find_cat_by_model as 
+(
 --query for google sheet that lets sales team help find the category by model
 with s as  -- ships
 ( -- main shipment data. where we find cateogories needing assignment
@@ -30,7 +32,7 @@ select distinct
 	s.model
 	,s.product_name
 	,sn.cat as similar_category
-	,sn.sub_cat as reccomended_cat
+	,sn.sub_cat as reccomended_sub_cat
 	,ac.account_manager
 from s
 left join sn
@@ -42,10 +44,9 @@ where s.find_cat = 1
 select model as "Model"
 	,product_name as "Product Name"
 	,max(similar_category) as "Reccomended Cat"
-	,max(reccomended_cat) as "Reccomended Cat"
+	,max(reccomended_sub_cat) as "Reccomended Sub Cat"
 	,max(account_manager) as "Reccomended Account"
 from details
 group by model, product_name
-
+)
 ;
-

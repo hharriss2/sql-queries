@@ -21,6 +21,7 @@ group by tool_id, model
 (
 select smt.model
 	,coalesce(smt.item_id,max_item_id) as item_id
+	,smt.division
 	,rs.tool_id::bigint as rs_item_id
 	,row_number() over (partition by smt.model order by rs.latest_sale desc) as seq_rs_tool -- assign the latest tool id used as a 1
 	,rs.latest_sale
@@ -55,6 +56,7 @@ select
 	sl.model
 	,sl.item_id
 	,sl.upc
+	,sl.division
 	,1 as is_lookup
 from sl 
 join slmax
@@ -68,6 +70,7 @@ select
 	,coalesce(slf.upc::varchar,details.upc) as upc
 	,coalesce(slf.is_lookup,0) as is_lookup
 	,now() as updated_on
+	,coalesce(slf.division,details.division) as division
 from details
 left join wm
 on details.model = wm.model

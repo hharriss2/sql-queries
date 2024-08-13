@@ -7,7 +7,11 @@ SELECT
 	id
 	,model
 	,division_id
-	,retailer_id
+	,case -- some reason this model shows up as sams stores instead of .com
+		when model = '60835GRTW4ES'
+		then 3
+		else retailer_id
+		end as retailer_id 
 	,units
 	,cbm_id
 	,sales

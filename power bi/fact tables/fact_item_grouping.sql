@@ -18,6 +18,7 @@ select
 	,ig.end_date
 	,sd.wm_date as wm_start_date
 	,ed.wm_date as wm_end_date
+	,ft.funding_type_id
 from clean_data.item_grouping ig
 left join power_bi.dim_wm_item_id i
 on ig.item_id = i.item_id
@@ -39,5 +40,7 @@ left join power_bi.group_id_view g
 on ig.item_id = g.tool_id
 left join power_bi.dim_group_type gt
 on ig.group_type = gt.group_type
+left join power_bi.dim_funding_type ft
+on ft.funding_type = ig.funding_type
 )
 ;

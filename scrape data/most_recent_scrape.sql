@@ -8,13 +8,25 @@ select distinct item_id, max(date_inserted) date_inserted
 from scrape_data.scrape_tbl
 where 1=1
 and date_inserted >= current_date - interval '30 days'
-and product_name is not null -- omits any items that the scraper did not find
-and product_name != 'Product not Found'
+-- and product_name is not null -- omits any items that the scraper did not find
+-- and product_name != 'Product not Found'
 group by item_id
 )
+,md as --max date
+(
+select max(date_inserted) as max_date
+from mi
+)
 select s.*
+    ,case
+    when s.date_inserted = md.max_date
+    then 1 
+    else 0
+    end as is_today_scrape
 from scrape_data.scrape_tbl s
 join mi 
 on s.item_id = mi.item_id
 and mi.date_inserted = s.date_inserted
+left join md
+on 1=1
 )

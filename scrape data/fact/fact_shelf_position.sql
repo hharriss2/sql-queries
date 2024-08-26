@@ -4,13 +4,37 @@ create or replace view power_bi.fact_shelf_position as
 with sa as  -- search api 
 (
 select * 
+	,min(page_number) over (partition by item_id, request_term, request_type) as best_page_number_tw
 from scrape_data.shelf_position
+where date_inserted = current_date
+
 )
-,sam as 
+,slw1 as --shelf last week step 1
 (
-select request_type, request_term, max(inserted_at) as date_compare
-from sa
-group by request_type, request_term
+select item_id
+	,request_term
+	,request_type
+	,page_number::bigint as page_number
+	,min(shelf_position) as best_shelf_position_lw
+from scrape_data.shelf_position
+where date_inserted = current_date - interval '7 days'
+group by item_id,request_term,request_type,page_number
+)
+,slw2 as --shelf last week 2 
+(
+select 
+	item_id
+	,min(page_number) as min_page_num
+from slw1
+group by item_id
+)
+,slw as --shelf last week final
+(
+select slw1.*
+from slw1
+join slw2
+on slw1.item_id = slw2.item_id
+and slw1.page_number = slw2.min_page_num
 )
 ,id as --item ids
 (
@@ -27,6 +51,9 @@ select
 	,coalesce(cl.category_name,sa.request_term) as request_term
 	,sa.shelf_position
 	,sa.page_number
+	,sa.best_page_number_tw
+	,slw.page_number as best_page_number_lw
+	,slw.best_shelf_position_lw
 	,sa.product_name
 	,sa.item_id
 	,sa.review_rating
@@ -41,23 +68,23 @@ select
     ,mrs.num_of_variants
     ,mrs.price_display_code
     ,mrs.price_display_code_2
-	,coalesce(is_internal_item, false) as is_internal_item	
+	,coalesce(is_internal_item, false) as is_internal_item
 	,case
-		when date_compare is null
-		then false
-		else true
-		end as is_most_recent_scrape
-		
+		when sa.page_number = best_page_number_tw
+		then true
+		else false
+		end as is_best_shelf
 from sa
-left join sam
-on sa.request_term = sam.request_term
-and sa.request_type = sam.request_type
-and sa.inserted_at = sam.date_compare
+left join slw
+on sa.item_id = slw.item_id
+and sa.request_term = slw.request_term
+and sa.request_type = slw.request_type
 left join id 
 on sa.item_id = id.item_id
 left join dapl_raw.blue_cart_category_lookup cl
 on sa.request_term = cl.category_id
 left join mrs
 on mrs.item_id = sa.item_id 
+
 )
 ;

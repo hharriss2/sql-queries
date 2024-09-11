@@ -1,13 +1,84 @@
---deviation forecast piece
---lived in forecast table in forecast.forecasted_units
-
 create or replace view projections.deviation as
 (
-
-	select l52_units_sold.model
-	,l4_units_ships
-	,l12_units_ships
-	,ams_units	
+with s as 
+(
+select
+	model
+	,date_shipped
+	,units
+	,case
+		when date_shipped >= date_trunc('month',current_date - interval '13 months')
+		and date_trunc('month',date_shipped) !=  date_trunc('month',current_date)
+		then 1 else 0
+		end as is_ams -- boolean to show last 52 weeks sold
+	,case
+		when date_shipped >= date_trunc('week', current_date - interval '5 weeks')
+		and date_trunc('week',date_shipped) !=date_trunc('week',current_date)
+		then 1
+		else 0
+		end as is_l4 -- boolean to show last 4 weeks sold
+	,case
+		when date_shipped >= date_trunc('week', current_date - interval '13 weeks')
+		and date_trunc('week',date_shipped) !=date_trunc('week',current_date)
+		then 1
+		else 0
+		end as is_l12 -- boolean to show if is last 12 for units sold
+from ships_schema.ships s 
+where 1=1
+and date_shipped >=current_date - interval '14 months'
+and retailer ='Walmart.com'
+)
+,s_agg as --ships aggregate
+( -- finding the average units sold for 12 months, 12 weeks, 4 weeks
+select
+	model
+	,sum( -- avg monthly units for last 12 months. divide by 12
+		case
+		when is_ams = 1
+		then units
+		else 0
+		end)/12 as ams_units 
+	,sum( -- find the average monthly units for last 12 weeks. divide by 3
+		case
+		when is_l12 = 1
+		then units
+		else 0
+		end)/3 as l12_units_ships
+	,sum(--avg monthly units for last 4 weeks. don't divide bc 4 weeks represent a month
+		case
+		when is_l4 = 1
+		then units
+		else 0
+		end) as l4_units_ships
+	,stddev( -- finding standard deviation for the units sold during each of the periods. 
+		case
+		when is_ams =1
+		then units
+		else null
+		end) as ams_dev
+	,stddev(
+		case
+		when is_l12 = 1
+		then units
+		else null
+		end) as l12_dev
+	,stddev(
+		case
+		when is_l4 = 1
+		then units
+		else null
+		end) as l4_dev
+	--set the weighted average variables here
+	,.2 as ams_weight
+	,.5 as l4_weight
+	,.3 as l12_weight
+from s
+group by model
+)
+select model
+	,l4_units_ships::numeric(10,2) as l4_units_ships
+	,l12_units_ships::numeric(10,2) as l12_units_ships
+	,ams_units::numeric(10,2) as ams_units
 --	,l4_dev::numeric(10,2)
 --	,l12_dev::numeric(10,2)
 --	,ams_dev::numeric(10,2)
@@ -41,76 +112,6 @@ create or replace view projections.deviation as
 		when l4_units_ships *2 >= ams_units then ams_weight +.1
 		when l4_units_ships *2 <=ams_units then ams_weight -.1
 		else ams_weight end as ams_weight_adj
-	from 
-		(
-		select s.model
-		, (sum(units)/count(distinct to_char(date_shipped, 'YYYYMM'))::numeric(10,2))::numeric(10,2) ams_units
-		,stddev(units) ams_dev
-		,.2 as ams_weight
-		from ships_schema.ships s
-			where to_char(date_shipped, 'YYYYMM') in 
-				(-- find year/month for last 12 months minus the current month 
-					select distinct to_char(date_shipped, 'YYYYMM')
-					from ships_schema.ships 
-					where to_char(date_shipped, 'YYYYMM') != (
-												select to_char(max(date_shipped),'YYYYMM') 
-												from ships_schema.ships
-															 )
-					order by to_char(date_shipped, 'YYYYMM') desc
-					limit 12
-						)
-			and retailer ='Walmart.com'
-			group by s.model
-		)l52_units_sold
-	left join 
-		(
-		select s.model
-		, (sum(units)::numeric(10,2))::numeric(10,2) l4_units_ships
-		,stddev(units) l4_dev
-		,.5 as l4_weight
-		-- not divided because last 4 acts as true month sum
-		from ships_schema.ships s
-		join wm_calendar w
-		on s.date_shipped = w.date
-		where wm_date in (-- finds the last 4 full weeks of sales
-							select distinct w.wm_date
-							from ships_schema.ships s
-							join wm_calendar w
-							on s.date_shipped = w.date
-							where wm_date != (select max(w.wm_date)-- filtes non full week
-							from ships_schema.ships s join wm_calendar w on s.date_shipped = w.date)
-							order by wm_date desc
-							limit 4
-						)
-		and units >0
-		and retailer ='Walmart.com'
-		group by s.model
-		)l4_units_sold
-	on l52_units_sold.model = l4_units_sold.model
-	left join 
-		(
-		select s.model
-		, (sum(units)/3::numeric(10,2))::numeric(10,2) l12_units_ships
-		,stddev(units) l12_dev
-		,.3 as l12_weight
-		-- divided by 3 to show an month average
-		from ships_schema.ships s
-		join wm_calendar w
-		on s.date_shipped = w.date
-		where wm_date in (-- finds the last 12 full weeks of sales
-							select distinct w.wm_date
-							from ships_schema.ships s
-							join wm_calendar w
-							on s.date_shipped = w.date
-							where wm_date != (select max(w.wm_date)-- filtes non full week
-							from ships_schema.ships s join wm_calendar w on s.date_shipped = w.date)
-							order by wm_date desc
-							limit 12
-						)
-		and units >0
-		and retailer = 'Walmart.com'
-		group by s.model
-		)l12_units_sold
-	on l12_units_sold.model = l52_units_sold.model
-	where ams_units >0 
+from s_agg
 )
+;		

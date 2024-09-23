@@ -1,7 +1,7 @@
 --get info for dsv orders, commissions, and est shipping cost
 create or replace view pos_reporting.dsv_orders_3p_recon as
 (
-with o as 
+with o as --orders
 (
 select 
 	dsv_order_id
@@ -12,13 +12,14 @@ select
 	,w.product_name
 	,qty
 	,order_total
-	,case
+	,case -- new status to join on commissions
 		when status !='Refund'
 		then 'Commission'
 		else status
 	end as commission_status
 	,status
 	,tracking_number
+	,state_name as state_abr -- abbreviated state name
 from pos_reporting.dsv_orders_3p ord
 left join clean_data.wm_catalog_3p w
 on ord.sku = w.model
@@ -27,6 +28,12 @@ and status !='Cancelled'
 -- june 1st - 30th. item info. 
 --commission, (pos - commission) & calculated ship rate
 )
+,sn as --state bane
+(
+select distinct state
+,statefullname as state_name
+from zipcodes
+)
 ,comm1 as --commission step 1
 (
 select 
@@ -34,7 +41,7 @@ select
 	,model
 	,amount_dollars
 	,commission_amt
-	,case
+	,case-- updating amount type to join on commission status
 		when transaction_type = 'Refund'
 		then 'Refund'
 		else 'Commission'
@@ -59,6 +66,12 @@ select tracking_number
 	,rate_amount
 from dapl_raw.dsv_3p_tracking_rates
 )
+,cs as --calculated shipping cost
+(--get the average shipping cost for an item where the zone is 5
+select * 
+from components.item_shipping_cost_tbl
+where zone_number = '5' -- average zone
+)
 ,details as 
 (
 select
@@ -72,8 +85,10 @@ select
 	,o.status
 	,o.qty
 	,o.order_total
-	,comm.commission_amt
-	,rates.rate_amount
+	,coalesce(comm.commission_amt, o.order_total * .15) as commission_amt
+	,(coalesce(rates.rate_amount,cs.shipping_cost) * o.qty::numeric)::numeric(10,2) as rate_amount
+	,o.state_abr
+	,sn.state_name
 from o 
 left join comm
 on o.po_id = comm.po_id
@@ -81,6 +96,11 @@ and o.commission_status = comm.amount_type
 and o.model = comm.model
 left join rates
 on o.tracking_number = rates.tracking_number
+left join sn on
+o.state_abr = sn.state
+left join cs
+on o.model = cs.model
+and status not in ('Refund','Cancelled','Acknowledged')
 )
 select *
 from details

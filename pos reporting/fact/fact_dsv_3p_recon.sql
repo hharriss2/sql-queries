@@ -1,3 +1,4 @@
+
 --fact table for the dsv 3p recon report on power bi
 create or replace view power_bi.fact_dsv_recon_3p as 
 (
@@ -5,13 +6,13 @@ select
 	dr.dsv_order_id
 	,dr.po_id
 	,dr.tracking_number
-	,dr.order_date
+	,cal.wmcal_id
 	,dm.model_id
 	,di.item_id_id
-	,dr.model
+	,cbm.cbm_id
+	,g.group_id_id
+	,amc.account_manager_id
 	,dp.product_name_id
-	,dr.product_name
-	,cal.wmcal_id
 	,os.order_status_id
 	,dr.qty
 	,dr.order_total
@@ -30,5 +31,11 @@ left join power_bi.wm_calendar_view cal
 on dr.order_date = cal.date 
 left join power_bi.dim_order_status os
 on dr.status = os.order_status_name
+left join cat_by_model cbm
+on dr.model = cbm.model
+left join account_manager_cat amc 
+on cbm.cat = amc.category_name
+left join power_bi.group_id_view g
+on dr.item_id = g.tool_id
 )
 ;

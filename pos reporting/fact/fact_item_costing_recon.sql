@@ -17,6 +17,8 @@ on dr.model = ic.model
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
 )
+,details as 
+(
 select 
 	model
 	,item_id
@@ -25,11 +27,27 @@ select
 	,order_total
 	,commission_amt
 	,rate_amount
+    ,is_suppression_model
 	,cogs
 	,cogs_overhead
 	,contribution_profit - cogs as  contribution_profit
+from rc
+)
+select 
+model
+	,item_id
+	,product_name
+	,qty
+	,order_total
+	,commission_amt
+	,rate_amount
+	,cogs
+	,cogs_overhead
+	,contribution_profit
 	,cast(contribution_profit / cogs as numeric(10,2)) as cp_perc
 	,cast(contribution_profit / cogs_overhead as numeric(10,2)) as cp_overhead_perc
-from rc
+    ,cast(contribution_profit/ qty  as numeric(10,2)) as avg_contribution_profit 
+    ,is_suppression_model
+from details
 )
 ;

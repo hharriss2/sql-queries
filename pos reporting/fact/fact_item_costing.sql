@@ -12,6 +12,11 @@ from components.item_costing_view
 select * 
 from components.item_shipping_cost
 )
+,sl as --suppression list
+(
+select * 
+from lookups.model_suppression_list
+)
 ,details as --one more clause bc postgres doesnt let me call alias names without it 
 ( -- joins to pull in item ids, do some math for break even point
 select
@@ -38,10 +43,16 @@ select
 	,freight_cost
 	,overhead_cost
 	,isc.total_shipping_cost
-	,contribution_profit_cost
-	,contribution_profit_cost_overhead
-	,cast((total_shipping_cost + contribution_profit_cost) /.85 as numeric(10,2)) as contribution_break_even
-	,cast((total_shipping_cost + contribution_profit_cost_overhead) /.85 as numeric(10,2)) as contribution_break_even_overhead
+	,contribution_profit_cost as net_cost
+	-- ,contribution_profit_cost_overhead
+	,cast((total_shipping_cost + contribution_profit_cost) /.85 as numeric(10,2)) as break_even
+	-- ,cast((total_shipping_cost + contribution_profit_cost_overhead) /.85 as numeric(10,2)) as contribution_break_even_overhead
+	,cast(((contribution_profit_cost * 1.2) + total_shipping_cost) / .85 as numeric(10,2)) as msrp
+	,case
+		when sl.model is not null
+		then 1
+		else 0
+		end as is_suppression_model
 from isc
 left join ic
 on ic.model = isc.model
@@ -49,6 +60,8 @@ left join clean_data.master_ships_list msl
 on ic.model = msl.model
 left join clean_data.master_com_list mcl
 on ic.model = mcl.model and msl.item_id is null
+left join sl
+on isc.model = sl.model
 )
 --final results. last calc to find estimated commission ( 15% of break even )
 select 
@@ -71,13 +84,15 @@ select
 	,overhead_cost
 	,total_shipping_cost
 	,avg(total_shipping_cost) over (partition by model) as avg_shipping_cost
-	,contribution_profit_cost
-	,contribution_profit_cost_overhead
-	,contribution_break_even *.15::numeric(10,2) as est_commission 
-	,contribution_break_even_overhead *.15::numeric(10,2) as est_commission_plus_overhead
-	,contribution_break_even
-    ,contribution_break_even_overhead
+	,net_cost
+	-- ,contribution_profit_cost_overhead
+	,break_even *.15::numeric(10,2) as est_commission 
+	-- ,contribution_break_even_overhead *.15::numeric(10,2) as est_commission_plus_overhead
+	,break_even
+    -- ,contribution_break_even_overhead
     ,has_costing
+	,msrp
+	,is_suppression_model
     
 from details
 )

@@ -31,7 +31,7 @@ item_id
 , review_count
 , seller_name
 , description
-,freight_shippping
+,freight_shipping
 ,shipping_message
 ,base_id
 ,case
@@ -84,28 +84,29 @@ item_id
 	,inserted_at::date
     as date_inserted
     ,inserted_at
+	,color
 from dapl_raw.blue_cart_item_scrape
 )
 select 
-	item_id
+item_id
 ,url
-, product_name
-, manufacturer_name
+,product_name
+,manufacturer_name
 ,brand_name
-, available
-, num_of_images
-, model_name
-, category
-, category_path
-, upc
-, num_of_variants
-, price_retail
-, price_was
-, review_rating
-, review_count
-, seller_name
-, description
-,freight_shippping
+,available
+,num_of_images
+,model_name
+,category
+,category_path
+,upc
+,num_of_variants
+,price_retail
+,price_was
+,review_rating
+,review_count
+,seller_name
+,description
+,freight_shipping
 ,shipping_message
 ,base_id
 ,has_video
@@ -124,6 +125,7 @@ select
 	else false
 	end as two_day_shipping
 ,date_inserted
+,color
 from t1
 where inserted_at = (select max(inserted_at) from t1)
 

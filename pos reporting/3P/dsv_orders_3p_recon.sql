@@ -72,6 +72,11 @@ select *
 from components.item_shipping_cost_tbl
 where zone_number = '5' -- average zone
 )
+,sl as --suppression list
+(
+select * 
+from lookups.model_suppression_list
+)
 ,details as 
 (
 select
@@ -85,10 +90,15 @@ select
 	,o.status
 	,o.qty
 	,o.order_total
-	,coalesce(comm.commission_amt, o.order_total * .15) as commission_amt
+	,coalesce(comm.commission_amt, o.order_total * -.15) as commission_amt
 	,(coalesce(rates.rate_amount,cs.shipping_cost) * o.qty::numeric)::numeric(10,2) as rate_amount
 	,o.state_abr
 	,sn.state_name
+	,case
+		when sl.model is not null 
+		then 1
+		else 0
+		end as is_suppression_model
 from o 
 left join comm
 on o.po_id = comm.po_id
@@ -101,6 +111,8 @@ o.state_abr = sn.state
 left join cs
 on o.model = cs.model
 and status not in ('Refund','Cancelled','Acknowledged')
+left join sl
+on o.model = sl.model
 )
 select *
 from details

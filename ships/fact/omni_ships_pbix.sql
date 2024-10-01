@@ -12,7 +12,10 @@ SELECT
 	,p.product_name_id::bigint as product_name_id
 	,t.item_id_id::integer AS tool_id_id
 	,s.division_id
-	,s.retailer_id
+	,case -- some reason this model is showing up as sams stores instead of .com 
+		when s.model = '60835GRTW4ES'
+		then 3 else s.retailer_id
+		end as retailer_id
 	,s.category_id
 	,s.units
 	,s.sales

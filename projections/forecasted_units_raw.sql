@@ -75,7 +75,7 @@ select retail_id as fcast_units_id
 	* (1+ coalesce(aur_ams_over_ams,0)) 
 	* (1 + coalesce(mom_average,0)) 
 	* (1 + coalesce(promo_ratio,0))  as forecasted_units
---new way. adds %'s to multiply against amsH
+--new way. adds %'s to multiply against ams
 --, (deviation.ams_ships) 
 --	* (
 --	1

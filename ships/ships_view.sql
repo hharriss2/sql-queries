@@ -29,7 +29,7 @@ SELECT
 		when date_shipped >= date_trunc('month',current_date - interval '13 months')
 		and date_trunc('month',date_shipped) !=  date_trunc('month',current_date)
 		then 1 else 0
-		end as is_l52 -- boolean to show last 52 weeks sold
+		end as is_l_52 -- boolean to show last 52 weeks sold
 	,case
 		when date_shipped >= date_trunc('week', current_date - interval '5 weeks')
 		and date_trunc('week',date_shipped) !=date_trunc('week',current_date)
@@ -43,11 +43,11 @@ SELECT
 		else 0
 		end as is_l12 -- boolean to show if is last 12 for units sold
 FROM ships_schema.ships s
-join divisions d
+left join divisions d
 on s.division = d.division_name
-join retailer r
+left join retailer r
 on s.retailer = r.retailer_name
-join sale_type st
+left join sale_type st
 on s.sale_type = st.sale_type
 LEFT JOIN clean_data.master_ships_list msl 
 ON s.model = msl.model

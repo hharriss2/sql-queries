@@ -51,7 +51,7 @@ from r_1
 select 
 	*
 	--find std dev for the sub cat & month number
-	,stddev(month_over_month) over (partition by sub_cat, sale_month) as month_std
+	,coalesce(stddev(month_over_month) over (partition by sub_cat, sale_month),0) as month_std
 	--find avg for sub cat & month number
 	,avg(month_over_month) over (partition by sub_cat, sale_month) as month_avg
 from r_2
@@ -66,8 +66,8 @@ select
 	,sale_month
 	,month_over_month
 	,case -- assigns a '1' to any outliers of the average according to avg +-stdev
-		when month_over_month <month_avg +month_std
-		and month_over_month >month_avg - month_std
+		when month_over_month <=month_avg +month_std
+		and month_over_month >=month_avg - month_std
 		then 0
 		else 1
 		end as is_mom_outlier

@@ -27,6 +27,7 @@ from ships_schema.ships s
 where 1=1
 and date_shipped >=current_date - interval '14 months'
 and retailer ='Walmart.com'
+and sale_type = 'Drop Ship'
 )
 ,s_agg as --ships aggregate
 ( -- finding the average units sold for 12 months, 12 weeks, 4 weeks

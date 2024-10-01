@@ -23,7 +23,7 @@ select
 	wm_cal_id 
 	,first_wm_week_date
 	,wm_date
-	,tf.wm_week
+	,wb.wm_week
 	,c.category_name
 	,a.account_manager
 	,c.category_id

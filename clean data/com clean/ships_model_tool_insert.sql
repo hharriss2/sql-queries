@@ -24,7 +24,7 @@ from ships_schema.ships
 where 1=1
 and upc::text  ~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$'
 --^only looks for UPC's with numbers
-and retailer in ('Walmart.com', 'Walmart Stores','SamsClub.com')
+and retailer in ('Walmart.com', 'Walmart Stores','SamsClub.com','Sam''s Club')
 --cleaning up for walmart retails only
 group by 
 	model

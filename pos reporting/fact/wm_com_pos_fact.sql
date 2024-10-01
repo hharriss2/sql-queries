@@ -19,7 +19,7 @@ SELECT
     ,units
     ,sales
     ,item_type
-    ,2 AS retail_type_id
+    ,retail_type_id
     ,is_put
     ,item_type_id
     ,account_manager_id

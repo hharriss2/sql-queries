@@ -1,6 +1,7 @@
 --not sure if first aur projection is obsolete or not
 --this query is currently what is running in data base
 --item sale date looks recently built so we'll see
+create or replace view forecast.aur_projection as (
 WITH retail_price AS 
 (
 SELECT rp.item_id
@@ -78,4 +79,5 @@ SELECT retail_price.item_id
         END, retail_price.edr_price) AS projected_aur
       ,aur_change.sale_month
    FROM retail_price
-     JOIN aur_change ON retail_price.item_id = aur_change.item_id;
+     JOIN aur_change ON retail_price.item_id = aur_change.item_id
+);

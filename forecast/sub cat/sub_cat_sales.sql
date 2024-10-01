@@ -21,8 +21,10 @@ with sub_cat_months as
 	when date_part('year',sale_date) = 2020 then (.5 * sum(units))::integer
 	when date_part('year',sale_date) = 2021 then (.7 * sum(units))::integer
 	when date_part('year',sale_date) = 2022 then (.9 * sum(units))::integer
+	when date_part('year',sale_date) = 2023 then (.9 * sum(units))::integer
+	when date_part('year',sale_date) = 2024 then (.9 * sum(units))::integer
 	end as total_units-- needs to be updated as new years come
-	from test_com tc
+	from test_com_tbl tc
 	join cat_by_model cbm
 	on tc.model = cbm.model
 --	where sub_cat in( 'Aquatic and reptile equipment and decor','Folding Beds')

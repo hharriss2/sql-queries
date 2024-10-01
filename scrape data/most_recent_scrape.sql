@@ -17,12 +17,45 @@ group by item_id
 select max(date_inserted) as max_date
 from mi
 )
-select s.*
+select
+	id
+	,url
+	,s.item_id
+	,product_name
+	,manufacturer_name
+	,available
+	,num_of_images
+	,model_name
+	,category
+	,category_path
+	,upc
+	,num_of_variants
+	,price_retail
+	,price_was
+	,review_rating
+	,review_count
+	,free_shipping
+	,two_day_shipping
+	,shelf_position
+	,est_days_shipped
+	,enabled_freight_shipping
+	,seller_name
+	,base_id
+	,description
+	,inserted_at
+	,s.date_inserted
+	,price_display_code
+	,has_video
+	,brand_name
+	,shipping_cost
+	,freight_shipping_date
+	,price_display_code_2
     ,case
     when s.date_inserted = md.max_date
     then 1 
     else 0
     end as is_today_scrape
+    ,color
 from scrape_data.scrape_tbl s
 join mi 
 on s.item_id = mi.item_id
@@ -30,3 +63,4 @@ and mi.date_inserted = s.date_inserted
 left join md
 on 1=1
 )
+;

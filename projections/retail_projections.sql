@@ -55,7 +55,8 @@ with r as
 )
 ,retail_ams as
 (
-	select sum(units)/count(distinct wm_week) as avg_ams, item_id
+	select sum(units)/count(distinct wm_week) as avg_ams
+		,item_id
 	from retail_link_pos
 	where units >0
 	group by item_id
@@ -68,7 +69,7 @@ r.item_id
 , aur_compare.aur_ams
 ,cred_weight
 ,case when avg_ams >0--cannot divide by 0
-then ((aur_ams- avg_ams) / avg_ams) * cred_weight
+then (aur_ams- avg_ams) / avg_ams)
 --the ams * how credible it is
 else 1-- first 2 criteria should make it 0
 end as ams_over_ams

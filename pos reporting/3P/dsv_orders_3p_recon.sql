@@ -110,7 +110,7 @@ left join sn on
 o.state_abr = sn.state
 left join cs
 on o.model = cs.model
-and status not in ('Refund','Cancelled','Acknowledged')
+and status not in ('Refund','Cancelled')
 left join sl
 on o.model = sl.model
 )

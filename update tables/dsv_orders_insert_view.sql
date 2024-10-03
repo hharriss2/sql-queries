@@ -28,8 +28,9 @@ select
     ,postal_code
     ,country
     ,address_type
-    ,split_part(tracking_url,'=',2) as tracking_number
+    ,tracking_number
     ,now() as updated_on
+    ,tracking_url
 from dapl_raw.dsv_orders_3p
 
 )
@@ -67,6 +68,7 @@ select
     ,address_type
     ,updated_on
     ,tracking_number
+    ,tracking_url
 from dsvr
 join dsvm
 on dsvr.dsv_order_id = dsvm.dsv_order_id

@@ -20,6 +20,7 @@ select
 	,dr.rate_amount
 	,dr.state_abr
 	,dr.state_name
+    ,dr.is_suppression_model
 from pos_reporting.dsv_orders_3p_recon dr
 left join power_bi.dim_models dm
 on dr.model = dm.model_name

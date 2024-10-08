@@ -41,7 +41,7 @@ select
 		then 1 
 		else 0
 		end as is_additional_handle
-from components.dsv_item_cost_3p
+from components.item_shipping_cost_tbl
 )
 ,dc as --dims calculated
 ( -- finding extra costs for the shipping based of dimensions
@@ -51,13 +51,13 @@ select *
 		then
 			case 
 			when zone_number ='2'
-			then 43.61
+			then 48.77
 			when zone_number in ('3','4')
-			then 46.46
+			then 51.62
 			when zone_number in ('5','6')
-			then 51.21
+			then 56.37
 			when zone_number in ('7','8')
-			then 53.11
+			then 61.65
 			else 0 end
 		else 0
 		end as oversize_surcharge
@@ -66,13 +66,13 @@ select *
 		then
 			case
 			when zone_number ='2'
-			then 7.22
+			then 6.55 + 1.16 -- demand charge
 			when zone_number in ('3','4')
-			then 7.79
+			then 7.12 + 1.16
 			when zone_number in ('5','6')
-			then 8.26
+			then 7.6 + 1.16
 			when zone_number in ('7','8')
-			then 8.93
+			then 8.26 + 1.16
 			else 0 end
 		else 0
 		end as additional_weight_surcharge
@@ -81,13 +81,13 @@ select *
 		then
 			case
 			when zone_number ='2'
-			then 4.84
+			then 5.34  -- demand already baked into this number
 			when zone_number in ('3','4')
-			then 5.32
+			then 5.81 
 			when zone_number in ('5','6')
-			then 5.79
+			then 6.29 
 			when zone_number in ('7','8')
-			then 6.36
+			then 6.86
 			else 0 end
 		else 0
 		end as additional_handle_surcharge
@@ -129,7 +129,6 @@ select
 	,height
 	,weight
 	,zone_number
-	,shipping_cost
 	,base_residential_rate
 	,oversize_surcharge
 	,additional_weight_surcharge
@@ -137,13 +136,23 @@ select
 	,case --if oversize, fed ex only uses oversize charge for some reason in their api
 		when is_oversize =1
 		then (base_residential_rate + oversize_surcharge) *.16
+        when is_additional_weight =1
+        then (base_residential_rate + additional_weight_surcharge) * .16
+        when is_additional_handle = 1 and is_additional_weight = 0
+        then (base_residential_rate + additional_handle_surcharge) * .16
 		else
 		(base_residential_rate + oversize_surcharge + additional_weight_surcharge +additional_handle_surcharge) * .16
         end as fuel_surcharge
 	,case -- calculating the total shipping cost. if oversize, use the other shipping cost 
-		when is_oversize =1
+            when base_residential_rate is null
+        then shipping_cost
+        when is_oversize =1
 		then base_residential_rate + oversize_surcharge + ((base_residential_rate + oversize_surcharge) *.16)
         --^calculation for oversized fuel surcharge
+        when is_additional_weight =1
+        then (base_residential_rate + additional_weight_surcharge) + ((base_residential_rate + additional_weight_surcharge) * .16)
+        when is_additional_handle = 1 and is_additional_weight = 0 
+        then base_residential_rate + additional_handle_surcharge +((base_residential_rate + additional_handle_surcharge) * .16)
 		else
 		base_residential_rate
 	+oversize_surcharge
@@ -151,6 +160,7 @@ select
 	+additional_handle_surcharge
 	+(base_residential_rate + oversize_surcharge + additional_weight_surcharge +additional_handle_surcharge) * .16
 	end as total_shipping_cost
+    ,shipping_cost
 from details
 )
 ;

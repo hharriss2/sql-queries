@@ -38,5 +38,6 @@ left join account_manager_cat amc
 on cbm.cat = amc.category_name
 left join power_bi.group_id_view g
 on dr.item_id = g.tool_id
+where dr.status !='Refund'
 )
 ;

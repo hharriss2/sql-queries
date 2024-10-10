@@ -1,12 +1,10 @@
-walmart_calendar_week
-business_date
-ecomm_prod_id
-walmart_upc_number
-product_name
-brand_name
-vendor_number
-vendor_name
-item_type_description
-item_type_code
-auth_based_item_quantity_this_year
-auth_based_net_sales_amount_this_year
+update  components.item_shipping_cost_tbl t1
+set weight = t2.weight
+,length = t2.length
+,height = t2.height
+,shipping_cost = t2.total_shipping_cost
+,is_multi_box = 1
+from temp_mb t2
+where
+t1.model = t2.model and t1.zone_number = t2.zone_number
+;

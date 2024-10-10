@@ -28,7 +28,7 @@ and status !='Cancelled'
 -- june 1st - 30th. item info. 
 --commission, (pos - commission) & calculated ship rate
 )
-,sn as --state bane
+,sn as --state name
 (
 select distinct state
 ,statefullname as state_name
@@ -69,13 +69,18 @@ from dapl_raw.dsv_3p_tracking_rates
 ,cs as --calculated shipping cost
 (--get the average shipping cost for an item where the zone is 5
 select * 
-from components.item_shipping_cost_tbl
+from components.item_shipping_cost
 where zone_number = '5' -- average zone
 )
 ,sl as --suppression list
 (
 select * 
 from lookups.model_suppression_list
+)
+,inv as --inventory
+(
+select * 
+from components.dsv_3p_inventory_agg
 )
 ,details as 
 (
@@ -91,7 +96,7 @@ select
 	,o.qty
 	,o.order_total
 	,coalesce(comm.commission_amt, o.order_total * -.15) as commission_amt
-	,(coalesce(rates.rate_amount,cs.shipping_cost) * o.qty::numeric)::numeric(10,2) as rate_amount
+	,(coalesce(rates.rate_amount,cs.total_shipping_cost) * o.qty::numeric)::numeric(10,2) as rate_amount
 	,o.state_abr
 	,sn.state_name
 	,case

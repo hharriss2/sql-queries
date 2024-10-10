@@ -41,6 +41,7 @@ select
 		then 1 
 		else 0
 		end as is_additional_handle
+	,is_multi_box
 from components.item_shipping_cost_tbl
 )
 ,dc as --dims calculated
@@ -144,7 +145,7 @@ select
 		(base_residential_rate + oversize_surcharge + additional_weight_surcharge +additional_handle_surcharge) * .16
         end as fuel_surcharge
 	,case -- calculating the total shipping cost. if oversize, use the other shipping cost 
-            when base_residential_rate is null
+		when base_residential_rate is null
         then shipping_cost
         when is_oversize =1
 		then base_residential_rate + oversize_surcharge + ((base_residential_rate + oversize_surcharge) *.16)
@@ -161,6 +162,7 @@ select
 	+(base_residential_rate + oversize_surcharge + additional_weight_surcharge +additional_handle_surcharge) * .16
 	end as total_shipping_cost
     ,shipping_cost
+	,is_multi_box
 from details
 )
 ;

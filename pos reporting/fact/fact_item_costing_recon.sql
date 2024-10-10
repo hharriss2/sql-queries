@@ -13,6 +13,9 @@ select dr.*
 	,order_total + (commission_amt) - (rate_amount) as cogs
     ,wcv.wmcal_id
     ,inv.avail_to_sell_qty -- current inventory level
+    ,mrs.price_retail
+    ,mrs.num_of_variants
+    ,dis3.status_id as item_status_id
 from pos_reporting.dsv_orders_3p_recon dr 
 left join components.item_costing_view ic
 on dr.model = ic.model
@@ -20,6 +23,12 @@ left join power_bi.wm_calendar_view wcv
 on dr.order_date = wcv.date
 left join components.dsv_3p_inventory_agg inv
 on dr.model = inv.model
+left join scrape_data.most_recent_scrape mrs
+on dr.item_id = mrs.item_id
+left join lookups.item_status_3p is3
+on is3.item_id = dr.item_id
+left join power_bi.dim_item_status_3p dis3
+on is3.status_name = dis3.status_name
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
 )
@@ -40,7 +49,10 @@ select
 	,cogs - net_cost as contribution_profit
     ,wmcal_id
     ,avail_to_sell_qty
-
+    ,order_date
+    ,price_retail
+    ,num_of_variants
+    ,item_status_id
 from rc
 )
 select 
@@ -62,9 +74,23 @@ model
 	end as cp_perc
     ,cast(contribution_profit/ qty  as numeric(10,2)) as avg_contribution_profit 
 	-- ,cast(contribution_profit / cogs_overhead as numeric(10,2)) as cp_overhead_perc
+
     ,is_suppression_model
     ,wmcal_id
     ,avail_to_sell_qty
+    ,case
+    	when order_date >= current_date - interval '60 days'
+    	then 1
+    	else 0
+    	end as is_last_60_days
+	,case
+		when order_date >= current_date - interval '8 weeks'
+		then 1
+		else 0 
+		end as is_last_8_weeks
+    ,price_retail
+    ,num_of_variants
+    ,item_status_id
 from details
 )
 ;

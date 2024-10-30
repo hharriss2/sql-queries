@@ -69,6 +69,7 @@ select
 		else 1
 		end as is_similar_sale_date
 	,count(prime_item_desc) over (partition by prime_item_desc) as count_item_desc
+	,row_number() over (partition by prime_item_nbr) as item_nbr_seq
 from smax_s2
 )
 ,smax as 
@@ -87,15 +88,24 @@ select s3.prime_item_nbr
 		then 1 -- 1 = the item number that will overwrite 
 		else 0 -- 0 means item(s) will not be overwriting other items
 		end as is_overwriting_item_num
+	,item_nbr_seq
 from smax_s3 s3
 where 1=1
+and item_nbr_seq =1
 
 )
 ,mcl as --master list
 ( -- only bringing in item numbers for the dataset
-select *
+SELECT mcl.item_id,
+	model,
+	division,
+	product_name,
+	is_scrape_product_name,
+	store_item_id,
+	retailer_type_id AS retail_type_id,
+	current_item_id AS current_item_num
 from clean_data.master_com_list mcl
-where retail_type_id = 1--store type id 
+where retailer_type_id = 1--store type id 
 )
 
 ,details as 

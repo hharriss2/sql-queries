@@ -11,8 +11,10 @@ select distinct
 	wm_date::integer as wm_date
 	,wm_week::integer as wm_week
 	,wm_year::integer as wm_year
-	,max(case when date = current_date then wm_date::integer else null end) over ()
-	as current_wm_date
+--	,max(case when date = date_trunc('month',current_date + interval'15 days')::date + interval'30 days' then wm_date::integer else null end) over ()
+--	as current_wm_date
+--^used to find a date to start sales teams projections
+	,202545 as current_wm_date
 from wm_calendar
 )
 ,wseq_2 as 

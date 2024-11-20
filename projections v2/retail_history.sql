@@ -1,18 +1,8 @@
 create or replace view projections.retail_history as 
 (
-with ig as --item grouping
-(--bring in the list of items on promo
-select
-	item_id
-	,model
-	,group_type
-	,start_date
-	,end_date
-	,suggested_retail
-	,funding_type
-from clean_data.item_grouping
-)
-,r as --retail link data
+--retail history in progress
+--trying to find the historical units for a reta
+with r as --retail link data
 (-- shows units sold each day and their retail price rounded to the nearest 10
 select item_id
 	,sale_date
@@ -142,69 +132,58 @@ and total_sale_week_2019
 +total_sale_week_2023
 +total_sale_week_2024 >10
 )
-,rh_details as --details for retail history
-( -- get the total units sold for the last 2 years at the specific retails
---for instance, get 50 units sold at $30, 20 sold at $40.
---columns UPW EDR(Units per week Every day retail) can be used to compare the total units per week 
+,r_agg_3 as 
+(-- finds the every day retails total units & total units per week
 select 
 	item_id
 	,retail_price
-	,total_units_per_week_2023
-	,total_units_per_week_2024
-	,max(case -- find the units per day when retail is the EDR retail for that year
-		when max_sale_week_2023 = total_sale_week_2023
-		then total_units_per_week_2023
+	,max( -- if the max sale week = total sale week, the item has mostly sold at this retail range
+        case
+		when max_sale_week_2024 = total_sale_week_2024
+		then retail_price
 		else null
-		end) over(partition by item_id) as upw_edr_2023
-	,max(case -- find the units per day when reail is the EDR retail for 2024
+		end)over(partition by item_id) 
+		as edr_2024 -- find every day retail for 2024
+	,max(
+        case
+		when max_sale_week_2023 = total_sale_week_2023
+		then retail_price
+		else null
+		end)over(partition by item_id) 
+		as edr_2023 -- find every day retail for 2023
+	,max(
+        case
 		when max_sale_week_2024 = total_sale_week_2024
 		then total_units_per_week_2024
 		else null
-		end) over(partition by item_id) as upw_edr_2024
+		end)over(partition by item_id) 
+		as edr_units_per_week_2024 -- find units per week for every day retail 2024
+	,max(
+        case
+		when max_sale_week_2023 = total_sale_week_2023
+		then total_units_per_week_2023
+		else null
+		end) over(partition by item_id) 
+		as edr_units_per_week_2023-- find units per week for every day retail 2023
+	,total_units_per_week_2024 as units_per_week_2024 -- at this retail, does total units sold / total weeks told at retail
+	,total_units_per_week_2023 as units_per_week_2023
 from r_agg_2
 )
-,details as 
-(--full retail history details
-select
-	rh_details.item_id
-	,ig.model
-	,ig.group_type
-	,ig.start_date
-	,ig.end_date
-	,suggested_retail
+select item_id
 	,retail_price
-	,total_units_per_week_2023
-	,total_units_per_week_2024
-	,upw_edr_2023
-	,upw_edr_2024
-	,cast
-	(
-	(retail_price - suggested_retail)/(suggested_retail) as numeric(10,2)
-	) 
-	as perc_diff_in_retail
-	--^^ finds the % difference from the promo retail and the current retail
-	,(total_units_per_week_2024 - upw_edr_2024)/(upw_edr_2024)::numeric(10,2) as perc_diff_from_edr_2024
-	--^^finds the total units sold at the retail over % of the every day retail for 2024
-	,(total_units_per_week_2023 - upw_edr_2023)/(upw_edr_2023)::numeric(10,2) as perc_diff_from_edr_2023
-	--^^finds the total units sold at the retail over % of the every day retail for 2023
-	,case --boolean to identify if retail is on promo
-		when ig.item_id is not null
-		then 1
-		else 0
-		end as is_promo
-	,abs(retail_price - suggested_retail) as retail_promo_diff
-	--^ used to find the closest retail price for promo items
-from rh_details
-left join ig
-on rh_details.item_id = ig.item_id
-)
-select
-	*
-	,min(retail_promo_diff) over (partition by item_id) as min_retail_promo_diff
-	--^ used later to identify which promo retail we need to be taking
-	,(perc_diff_from_edr_2023 + coalesce(perc_diff_in_retail,0)) as perc_diff_from_edr_2023_adjusted
-	,(perc_diff_from_edr_2024 + coalesce(perc_diff_in_retail,0)) as perc_diff_from_edr_2024_adjusted
-
-from details
+	,edr_2023
+	,edr_2024
+	,edr_units_per_week_2023
+	,edr_units_per_week_2024
+	,units_per_week_2024
+	,units_per_week_2023
+	,(units_per_week_2024- edr_units_per_week_2024)::numeric(10,2)
+		/ nullif(edr_units_per_week_2024,0)::numeric(10,2)
+	as retail_over_erd_perc_2024 -- find the % change between the retails UPW and the EDR UPW
+	,(units_per_week_2023- edr_units_per_week_2023)::numeric(10,2)
+		/ nullif(edr_units_per_week_2023,0)::numeric(10,2)
+	as retail_over_erd_perc_2023
+from r_agg_3
 )
 ;
+

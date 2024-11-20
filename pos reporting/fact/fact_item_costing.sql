@@ -17,6 +17,12 @@ from components.item_shipping_cost
 select * 
 from lookups.model_suppression_list
 )
+,mpl as --marketplace lookup
+(
+select model
+from clean_data.current_wm_catalog_3p
+where item_status = 'PUBLISHED'
+)
 ,details as --one more clause bc postgres doesnt let me call alias names without it 
 ( -- joins to pull in item ids, do some math for break even point
 select
@@ -53,15 +59,23 @@ select
 		then 1
 		else 0
 		end as is_suppression_model
+	,isc.is_multi_box
+	,case
+		when mpl.model is not null 
+		then 1
+		else 0
+		end as is_3p_model
 from isc
 left join ic
 on ic.model = isc.model
 left join clean_data.master_ships_list msl
-on ic.model = msl.model
+on isc.model = msl.model
 left join clean_data.master_com_list mcl
-on ic.model = mcl.model and msl.item_id is null
+on isc.model = mcl.model and msl.item_id is null
 left join sl
 on isc.model = sl.model
+left join mpl
+on isc.model = mpl.model
 )
 --final results. last calc to find estimated commission ( 15% of break even )
 select 
@@ -93,7 +107,8 @@ select
     ,has_costing
 	,msrp
 	,is_suppression_model
-    
+    ,is_multi_box
+	,is_3p_model
 from details
 )
 ;

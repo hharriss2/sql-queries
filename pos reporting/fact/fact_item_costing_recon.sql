@@ -11,11 +11,19 @@ select dr.*
 	,ic.contribution_profit_cost * qty as net_cost
 	-- ,ic.contribution_profit_cost_overhead * qty as cogs_overhead
 	,order_total + (commission_amt) - (rate_amount) as cogs
+	,order_total + commission_amt as gross_cogs
     ,wcv.wmcal_id
     ,inv.avail_to_sell_qty -- current inventory level
     ,mrs.price_retail
     ,mrs.num_of_variants
     ,dis3.status_id as item_status_id
+	,di.item_id_id
+	,case
+		when iss.model is not null
+		then 1
+		else 0
+		end as is_disco
+	,cbm.cbm_id
 from pos_reporting.dsv_orders_3p_recon dr 
 left join components.item_costing_view ic
 on dr.model = ic.model
@@ -29,6 +37,12 @@ left join lookups.item_status_3p is3
 on is3.item_id = dr.item_id
 left join power_bi.dim_item_status_3p dis3
 on is3.status_name = dis3.status_name
+left join power_bi.dim_wm_item_id di
+on dr.item_id = di.item_id
+left join lookups.item_status_ships	iss
+on dr.model = iss.model
+left join cat_by_model cbm 
+on dr.model = cbm.model
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
 )
@@ -53,6 +67,11 @@ select
     ,price_retail
     ,num_of_variants
     ,item_status_id
+	,is_multi_box
+	,gross_cogs
+	,item_id_id
+	,is_disco
+	,cbm_id
 from rc
 )
 select 
@@ -74,7 +93,6 @@ model
 	end as cp_perc
     ,cast(contribution_profit/ qty  as numeric(10,2)) as avg_contribution_profit 
 	-- ,cast(contribution_profit / cogs_overhead as numeric(10,2)) as cp_overhead_perc
-
     ,is_suppression_model
     ,wmcal_id
     ,avail_to_sell_qty
@@ -91,6 +109,13 @@ model
     ,price_retail
     ,num_of_variants
     ,item_status_id
+	,order_date
+	,is_multi_box
+	,gross_cogs
+	,item_id_id
+	,is_disco
+	,cbm_id
+	,contribution_profit / order_total as pos_cp_perc
 from details
 )
 ;

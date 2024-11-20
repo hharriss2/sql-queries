@@ -211,7 +211,7 @@ from s_adj
 --for dates past the current month, the projected_ams column will be assigned
 select *
 	,avg(ams_ships) 
-		over (partition by model_name, wm_week order by wm_date rows unbounded preceding) 
+		over (partition by model_name, wm_week order by wm_date rows 1 preceding) 
 	as projected_ams
 	--^finds the average AMS for the weighted average
 	,case
@@ -240,6 +240,7 @@ select
 	,current_wm_week_seq
     ,most_current_total_units
 from s_proj
-where wm_date >=current_wm_date
+-- where wm_date >=current_wm_date
+where wm_date >=202545
 )
 ;

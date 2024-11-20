@@ -63,10 +63,10 @@ select
 	,is_wow_outlier
 --setting limits of maximum 2.5 multiplier
 	,case
-		when coalesce(wow_average,week_over_week) >2.5
-		then 2.5
-		when coalesce(wow_average,week_over_week) <-2.5
-		then -2.5
+		when coalesce(wow_average,week_over_week) >2
+		then 2
+		when coalesce(wow_average,week_over_week) <-1
+		then -1
 		else coalesce(wow_average,week_over_week)
 		end as wow_average
 from projections.sub_cat_lift_by_week
@@ -112,7 +112,7 @@ on ls.model_name = promo_cal.model and ls.wm_date = promo_cal.wm_date
 select * 
 	,(ams_ships)
 		*(1 + coalesce(wow_average,0))
-		*(1 + coalesce(promo_lift +.02,0))
+		*(1 + coalesce(promo_lift,0))
 		as projected_units
 from details
 )

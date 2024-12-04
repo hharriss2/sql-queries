@@ -20,9 +20,15 @@ select
 	,status
 	,tracking_number
 	,state_name as state_abr -- abbreviated state name
+	,acknowledged_on
+	,shipped_on
+	,delivered_on
+	,coalesce(wc.item_status,'Not Found') as item_status
 from pos_reporting.dsv_orders_3p ord
-left join clean_data.wm_catalog_3p w
+left join clean_data.current_wm_catalog_3p w -- list of all models that have ran dsv
 on ord.sku = w.model
+left join components.wm_catalog_3p wc
+on ord.sku = wc.model
 where 1=1
 and status !='Cancelled'
 -- june 1st - 30th. item info. 
@@ -64,7 +70,9 @@ group by po_id, model, amount_type
 (
 select tracking_number
 	,rate_amount
-from dapl_raw.dsv_3p_tracking_rates
+	,rate_type
+	,origin_postal_code
+from pos_reporting.tracking_rates_view
 )
 ,cs as --calculated shipping cost
 (--get the average shipping cost for an item where the zone is 5
@@ -104,6 +112,16 @@ select
 		then 1
 		else 0
 		end as is_suppression_model
+	,case 
+		when rate_type = 'Multi Box'
+		then 1
+		else 0
+		end as is_multi_box
+	,rates.origin_postal_code
+	,acknowledged_on
+	,shipped_on
+	,delivered_on
+	,item_status
 from o 
 left join comm
 on o.po_id = comm.po_id

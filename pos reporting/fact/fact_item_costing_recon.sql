@@ -1,7 +1,21 @@
 --report combines the item costing and dsv recon reports into one report for viewing
 create or replace view power_bi.fact_item_costing_recon as 
 (
-with rc as --recon costs
+with dl as --disco list
+( -- returns items that are in the discontinued list of products
+select *
+from lookups.internal_item_status_view
+where item_status in 
+('Production - Obsolete','Production - Site Closeout') -- these statuses are considered 'Disco'
+)
+,dc as 
+(
+select distinct model,dc.division_name, d.division_id
+from components.dorel_catalog dc
+left join divisions d
+on dc.division_name = d.division_name
+)
+,rc as --recon costs
 (-- report impliments both recon and costs for the order
 select dr.*
 	,(ic.duty_cost * qty) as duty_cost
@@ -19,11 +33,12 @@ select dr.*
     ,dis3.status_id as item_status_id
 	,di.item_id_id
 	,case
-		when iss.model is not null
+		when dl.model is not null
 		then 1
 		else 0
 		end as is_disco
 	,cbm.cbm_id
+	,dc.division_id
 from pos_reporting.dsv_orders_3p_recon dr 
 left join components.item_costing_view ic
 on dr.model = ic.model
@@ -39,10 +54,12 @@ left join power_bi.dim_item_status_3p dis3
 on is3.status_name = dis3.status_name
 left join power_bi.dim_wm_item_id di
 on dr.item_id = di.item_id
-left join lookups.item_status_ships	iss
-on dr.model = iss.model
+left join dl
+on dr.model = dl.model
 left join cat_by_model cbm 
 on dr.model = cbm.model
+left join dc
+on dr.model = dc.model
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
 )
@@ -72,6 +89,7 @@ select
 	,item_id_id
 	,is_disco
 	,cbm_id
+	,division_id
 from rc
 )
 select 
@@ -116,6 +134,7 @@ model
 	,is_disco
 	,cbm_id
 	,contribution_profit / order_total as pos_cp_perc
+	,division_id
 from details
 )
 ;

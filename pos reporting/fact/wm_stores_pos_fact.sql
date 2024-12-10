@@ -83,7 +83,7 @@ FROM power_bi.dim_product_names
 SELECT 
     item_id as tool_id
     ,item_id_id as tool_id_id
-FROM power_bi.dim_item_id_view_pos
+FROM power_bi.dim_wm_item_id
 )
 , bn AS 
 (
@@ -120,7 +120,7 @@ SELECT ssa.id
     ,mv.model_id
     ,bn.brand_id
     ,ssa.group_id_id
-    ,bid.tool_id_id AS base_id_id
+    ,bid.tool_id_id::bigint AS base_id_id
     ,1 AS item_type_id
     ,budcal.wm_cal_id as wm_budget_cal_id
     ,ssa.category_id

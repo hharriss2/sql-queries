@@ -116,16 +116,3 @@ select *
 from item_commission
 ;
 
-select
-	po_id
-	,transaction_description
-	,sum(amount_dollars) as total_service_fee
-from dapl_raw.dsv_orders_3p_rates
-where amount_type = 'Item Fees'
-group by po_id
-,transaction_description
-
-;
-select *
-from dapl_raw.dsv_orders_3p_rates
-where transaction_type = 'Refund'

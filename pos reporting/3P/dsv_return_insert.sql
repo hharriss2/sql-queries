@@ -1,8 +1,9 @@
 --creates a template to convert rate information into pos information. 
---this one specifically looks for refunded items and adds them to POS
+--this one specifically looks for refunded items and adds them to 3P POS
+--DSV Data inserts, then this is used to insert refunds, then all the data is uploaded to retail_link_pos tabl 
 create or replace view dapl_raw.dsv_return_3p_insert as 
 (
-with orders1 as  -- first step in making the rates data the same as orders data
+with orders1 as  -- first step in making the recon rates data the same as orders data
 (
 select po_id
 ,model as sku
@@ -20,7 +21,7 @@ and po_id not in (select po_id from pos_reporting.dsv_orders_3p where order_tota
 group by po_id, model,transaction_posted_date, transaction_type
 ,model
 )
-,orders2 as -- 2nd step in making rates data modeled like orders
+,orders2 as -- 2nd step in making recon rates data modeled like orders
 (
 select 
 	po_id
@@ -48,7 +49,7 @@ select po_id
 	,max(line_number) as max_line_number
 from pos_reporting.dsv_orders_3p
 group by po_id
-)
+) -- 
 select 
 	(o2.po_id::text || coalesce(line_number + max_line_number, line_number))::bigint as dsv_order_id
 	,o2.po_id

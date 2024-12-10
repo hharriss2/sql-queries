@@ -102,6 +102,9 @@ left join category c
 on p.cat = c.category_name
 left join power_bi.dim_forecast_type 
 on 1=1
+left join forecast.forecast_dhp fdhp
+on p.model = fdhp.model
+and 
 limit 10000
 )
 ;

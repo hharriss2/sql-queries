@@ -1,3 +1,6 @@
+--find the last 4,13, & 52 weeks for ships
+--find deviations.
+--depending on how much deviation, adjust weights for the units
 create or replace view projections.deviation as
 (
 with s as 

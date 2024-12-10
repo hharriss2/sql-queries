@@ -1,3 +1,4 @@
+--final view for the projections
 create or replace view projections.projection_view as 
 (
 with fu as 

@@ -13,7 +13,7 @@ where 1=1
 and retailer ='Walmart.com'
 and sale_type = 'Drop Ship'
 and date_trunc('month',date_shipped)::date != date_trunc('month',current_date)::date -- getting full sales for
--- and s.model = '8620335WCOM' -- testing a model
+-- and s.model = '8174335W' -- testing a model
 group by model,date_trunc('month',date_shipped)::date
 
 )

@@ -42,6 +42,7 @@ SELECT
 		then 1
 		else 0
 		end as is_l12 -- boolean to show if is last 12 for units sold
+  ,s.warehouse
 FROM ships_schema.ships s
 left join divisions d
 on s.division = d.division_name

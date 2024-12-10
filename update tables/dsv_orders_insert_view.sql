@@ -6,7 +6,7 @@ create or replace view dapl_raw.dsv_order_insert_view as
 with dsvr as -- raw data from dsv orders
 ( --pull in the dsv orders from the raw data
 select
-    cast(po_id ||line_number as bigint) as dsv_order_id -- concatination of the po_id & line number to make row unnique
+    cast(po_id ||line_number as bigint) as dsv_order_id -- concatination of the po_id & line number to make row unique
     ,po_id -- purchase order id
     ,so_id  -- store order id
     ,order_date -- date of order

@@ -21,7 +21,6 @@ from pos_reporting.dsv_orders_3p o
 join os
 on o.dsv_order_id = os.dsv_order_id
 where 1=1
-and o.status != os.status
 )
 -- final part
 -- if the status changes, take the current timestamp

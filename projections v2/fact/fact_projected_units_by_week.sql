@@ -35,6 +35,24 @@ select
 	,total_feed 
         -sum(coalesce(stf.units,projected_units)) over (partition by model_name order by p.wm_date)
         as inventory_units
+    ,case
+    	when projected_forecast_type_id = 1 -- forecast is sales people forecast
+    	then coalesce(stf.units,0)
+    	when projected_forecast_type_id = 2 -- forecast entered in by divisions
+    	then coalesce(uf.units_by_week,0)
+    	when projected_forecast_type_id = 3 -- what the week did for last years
+    	then most_current_total_units
+    	when projected_forecast_type_id = 4 --what the model projects to sell for the week
+	    	then 
+	    	case
+			when p.total_units is null
+			then projected_units
+			else null end
+		when projected_forecast_type_id = 5 -- subtracting the inventory from sales. if no sales, use the projected units
+		then total_feed
+			-sum(coalesce(stf.units,projected_units)) over (partition by model_name order by p.wm_date)
+		end as matrix_units
+	,projected_forecast_type_id
 from projections.projected_units_by_week_mat_view p
 left join power_bi.dim_product_names pn
 on p.product_name = pn.product_name
@@ -48,6 +66,8 @@ left join power_bi.divisions_view d
 on p.division = d.division_name
 left join category c 
 on p.cat = c.category_name
+left join power_bi.dim_forecast_type ft
+on 1=1
 left join projections.updated_forecast_dhp_by_week uf -- bring in the dhp forecast
 on p.model_name = uf.model
 and p.wm_date = uf.wm_date
@@ -56,5 +76,6 @@ on p.model_name = stf.model
 and p.wm_date = stf.wm_date
 left join projections.inventory_feed_com invf
 on p.model_name = invf.model
+
 )
 ;

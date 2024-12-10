@@ -9,6 +9,13 @@ select distinct state
 ,zipcode
 from zipcodes 
 )
+,dl as --disco list
+( -- returns items that are in the discontinued list of products
+select *
+from lookups.internal_item_status_view
+where item_status in 
+('Production - Obsolete','Production - Site Closeout') -- these statuses are considered 'Disco'
+)
 select
 	dr.dsv_order_id
 	,dr.po_id
@@ -34,7 +41,7 @@ select
 	,delivered_on::date - shipped_on::date as shipped_to_delivered_days
 	,delivered_on::date -  order_date::date as ordered_to_delivered_days
 	,case -- shows if model is on disco or not
-		when iss.model is not null
+		when dl.model is not null
 		then 1
 		else 0
 		end as is_disco
@@ -57,8 +64,8 @@ left join account_manager_cat amc
 on cbm.cat = amc.category_name
 left join power_bi.group_id_view g
 on dr.item_id = g.tool_id
-left join lookups.item_status_ships iss
-on dr.model = iss.model
+left join dl
+on dr.model = dl.model
 where dr.status !='Refund'
 )
 ;

@@ -4,9 +4,10 @@ create or replace view lookups.wm_week_to_month as
 (
 select wm_date::integer as wm_date
 	,min(wm_year::integer) as wm_year
-	,min(date_part('month',date)) as first_month_num
+	,date_part('month',min(date)) as first_month_num
+        --^finds the earlist month a wm date is in
+    ,date_trunc('month',min(date))::date  as first_date
 from wm_calendar
 where wm_week is not null
-group by wm_week::integer,wm_year::integer
+group by wm_date::integer,wm_year::integer
 )
-;

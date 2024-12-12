@@ -22,7 +22,7 @@ where business_date = (select max(business_date) from dapl_raw.store_on_hands)
 ,wh as 
 (
 select * 
-from dapl_raw.whse_oh_dc dc
+from inventory.wm_warehouse_on_hands
 )
 select 
 	sa.all_links_item_number

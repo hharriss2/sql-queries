@@ -1,5 +1,5 @@
 --inventory feeds for items for walmart
-create or replace view walmart.components.intentory_feeds as 
+create or replace view walmart.components.ecomm_intentory_feeds as 
 (
 with details as 
 (

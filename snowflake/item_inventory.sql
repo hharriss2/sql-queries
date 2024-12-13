@@ -1,4 +1,3 @@
---query finds the inventory for an item by warehouse
 create or replace view walmart.components.item_inventory as 
 (
 with ri as --recent inventory
@@ -61,4 +60,3 @@ group by
 select * 
 from ia
 )
-;

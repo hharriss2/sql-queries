@@ -1,6 +1,6 @@
 
 --inserting the raw excel file into the production table, components schema
-insert into components.internal_item_costing
+insert into item_costing.item_costing_tbl
 	(
 	model_wh_country_key
 	,model

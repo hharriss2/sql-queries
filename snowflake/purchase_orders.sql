@@ -17,7 +17,7 @@ select
     ,di.item_name as product_name
     ,order_line_number
     ,cancel_by_date
-    ,shipped_date
+    ,coalesce(shipped_date, cancel_by_date - interval '7 days') as shipped_date
     ,order_count_key
     ,order_line_quantity
     ,order_line_bundle_quantity
@@ -40,7 +40,7 @@ on fol.item_sk = di.item_sk
 left join walmart.components.dim_customer dc
 on fol.customer_sk = dc.customer_sk
 where 1=1
-and  dc.retailer_name in ('Walmart.com','Walmart Stores')
+-- and  dc.retailer_name in ('Walmart.com','Walmart Stores')
 and (
     order_line_status not in 
     (

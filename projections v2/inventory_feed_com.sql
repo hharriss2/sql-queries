@@ -8,7 +8,7 @@ select
 	,max(date_created) as latest_created_date
 	,max(date_updated) as latest_updated_date
 	,max(inserted_at) as inserted_at
-from pos_reporting.inventory_feeds
+from inventory.sf_ecomm_inventory_feeds
 group by model
 )
 ;

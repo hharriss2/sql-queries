@@ -28,7 +28,7 @@ select
     ,on_water_quantity
     -- ,sum(open_order_quantity) as open_order_quantity
     -- ,sum(on_water_quantity) as on_water_quantity
-    ,sum(po_quantity) as po_quantity
+    ,po_quantity
     ,inventory_turns
     ,di.model_number || warehouse_name as un_key --testing out this key to confirm uniqueness
 from dorel_dwh.edw.fact_product_inventory fi
@@ -56,6 +56,7 @@ group by
     ,inventory_turns
     ,open_order_quantity
     ,on_water_quantity
+    ,po_quantity
 )
 select * 
 from ia

@@ -49,7 +49,7 @@ select
 	,cost_date
 	,unit_type
 	,max(cost_date) over() as recent_cost_date
-from components.internal_item_costing
+from item_costing.item_costing_tbl
 )
 ,si as --ships item
 (--combining the ships and the item costing

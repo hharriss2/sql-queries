@@ -1,5 +1,5 @@
 
-create or replace view walmart.componenets.dorel_catalog as 
+create or replace view walmart.components.dorel_catalog as 
 (
 -- this view creates a catalog by combining the internal item info with the provided wm info
 select
@@ -34,9 +34,9 @@ select
     ,live_on_site_date
 from dorel_dwh.edw.dim_item  di
 left join dorel_dwh.edw.xref_item_retailer ir
+on ir.item_sk = di.item_sk
 left join walmart.lookups.dim_retailers dr
 on ir.retailer_sk = dr.retailer_id
-on ir.item_sk = di.item_sk
 where 1=1
 -- and retailer_sk in ('c9e1074f5b3f9fc8ea15d152add07294','38b3eff8baf56627478ec76a704e9b52')
 )

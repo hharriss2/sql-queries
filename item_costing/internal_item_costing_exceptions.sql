@@ -1,3 +1,5 @@
+create or replace view components.internal_item_costing_exceptions_view as 
+(
  WITH t1 AS 
  ( -- first, find all of the previous months costs, container qty, and origin country
     SELECT model
@@ -18,8 +20,8 @@
     ,lag(freight_cost) OVER (PARTITION BY model, warehouse_number ORDER BY cost_date) AS prev_freight_cost
     ,row_number() OVER (ORDER BY model, warehouse_number, cost_date DESC) AS ic_id
     ,row_number() OVER (PARTITION BY model, warehouse_number ORDER BY cost_date DESC) AS model_warehouse_seq
-    max(cost_date) OVER () AS latest_cost_date
-    FROM components.internal_item_costing
+    ,max(cost_date) OVER () AS latest_cost_date
+    FROM item_costing.item_costing_tbl
 )
 , t2 AS 
 ( -- use case statements to mark a change in the new item costs vs old ones
@@ -63,7 +65,7 @@ SELECT
         WHEN freight_cost <> prev_freight_cost THEN 1
         ELSE 0
     END AS is_freight_cost_change
-    CASE
+    ,CASE
         WHEN cost_date <> latest_cost_date THEN 1
         ELSE 0
     END AS is_not_on_new_cost_update
@@ -95,4 +97,5 @@ ORDER BY ic_id
     END AS change_description
     ,is_country_change
    FROM t2
-  ORDER BY model, warehouse_number;
+  ORDER BY model, warehouse_number
+  );

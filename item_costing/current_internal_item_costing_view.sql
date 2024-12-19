@@ -1,0 +1,43 @@
+ WITH t1 AS (
+         SELECT model_wh_country_key,
+            model,
+            warehouse_number,
+            description,
+            origin_country,
+            hts_code,
+            duty_free,
+            container_qty,
+            material_cost,
+            duty_cost,
+            freight_cost,
+            purchase_overhead_cost,
+            labor_cost,
+            total_overhead_cost,
+            setup_labor_cost,
+            material_overhead_cost,
+            inserted_at,
+            cost_date,
+            max(cost_date) OVER () AS latest_cost_date
+           FROM item_costing.item_costing_tbl
+        )
+ SELECT model_wh_country_key,
+    model,
+    warehouse_number,
+    description,
+    origin_country,
+    hts_code,
+    duty_free,
+    container_qty,
+    material_cost,
+    duty_cost,
+    freight_cost,
+    purchase_overhead_cost,
+    labor_cost,
+    total_overhead_cost,
+    setup_labor_cost,
+    material_overhead_cost,
+    inserted_at,
+    cost_date,
+    latest_cost_date
+   FROM t1
+  WHERE cost_date = latest_cost_date;

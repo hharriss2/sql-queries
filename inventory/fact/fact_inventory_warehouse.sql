@@ -1,3 +1,4 @@
+--query used for the pipeline report on power BI. contains store inventory and store warehouse numbers
 create or replace view power_bi.fact_inventory_warehouse as 
 (
 with sa as --store aggregate
@@ -64,13 +65,13 @@ left join wh
 on sa.walmart_item_number = wh.walmart_item_number
 and sa.rdc = distribution_center_number
 and sa.idc = storage_distribution_center_number
-left join power_bi.dim_item_number din
+left join dim_sources.dim_item_number din
 on sa.walmart_item_number = din.item_number
-left join power_bi.dim_storage_distribution_center sdc
+left join dim_sources.dim_storage_distribution_center sdc
 on sa.idc = sdc.storage_distribution_center_number
-left join power_bi.dim_distribution_center dc
+left join dim_sources.dim_distribution_center dc
 on sa.rdc = dc.distribution_center_number
-left join power_bi.dim_wm_store ws
+left join dim_sources.dim_wm_store ws
 on sa.store_number = ws.store_number
 left join clean_data.master_com_list mcl 
 on sa.walmart_item_number = mcl.item_id

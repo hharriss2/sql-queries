@@ -33,15 +33,15 @@ left join lookups.model_suppression_list sl
 on isc.model = sl.model
 left join cat_by_model cbm
 on isc.model = cbm.model
-left join power_bi.dim_product_names pn
+left join dim_sources.dim_product_names pn
 on msl.product_name = pn.product_name
-left join power_bi.dim_wm_item_id wi 
+left join dim_sources.dim_wm_item_id wi 
 on msl.item_id = wi.item_id
-left join power_bi.dim_models dm
+left join dim_sources.dim_models dm
 on isc.model = dm.model_name
 left join account_manager_cat ac
 on cbm.cat = ac.category_name
-left join power_bi.dim_ships_item_id si
+left join dim_sources.dim_ships_item_id si
 on msl.item_id::text = si.item_id
 group by dm.model_id
 	,wi.item_id_id

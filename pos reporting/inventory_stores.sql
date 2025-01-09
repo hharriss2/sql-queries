@@ -24,7 +24,7 @@ left join wm_catalog w
 on t1.walmart_item_number = w.item_num
 left join clean_data.master_com_list mcl
 on w.item_num = mcl.item_id
-left join power_bi.dim_vendor dv
+left join dim_sources.dim_vendor dv
 on t1.vendor_nbr::text = dv.vendor_id
 where 1=1
 )

@@ -26,11 +26,11 @@ SELECT
 	,s.cbm_id
 	,s.group_id_id
 FROM s
-LEFT JOIN power_bi.dim_ships_item_id t 
+LEFT JOIN dim_sources.dim_ships_item_id t 
 ON s.tool_id = t.item_id::text
-LEFT JOIN power_bi.dim_models m 
+LEFT JOIN dim_sources.dim_models m 
 ON m.model_name = s.model
-LEFT JOIN power_bi.dim_product_names p 
+LEFT JOIN dim_sources.dim_product_names p 
 ON p.product_name = s.product_name
 )
 ;

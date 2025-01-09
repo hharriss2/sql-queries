@@ -54,9 +54,9 @@ select
 		end as matrix_units
 	,projected_forecast_type_id
 from projections.projected_units_by_week_mat_view p
-left join power_bi.dim_product_names pn
+left join dim_sources.dim_product_names pn
 on p.product_name = pn.product_name
-left join power_bi.dim_wm_item_id id
+left join dim_sources.dim_wm_item_id id
 on id.item_id = p.item_id
 left join power_bi.wm_budget_calendar wcal
 on wcal.wm_cal_id = p.wm_cal_id
@@ -66,7 +66,7 @@ left join power_bi.divisions_view d
 on p.division = d.division_name
 left join category c 
 on p.cat = c.category_name
-left join power_bi.dim_forecast_type ft
+left join dim_sources.dim_forecast_type ft
 on 1=1
 left join projections.updated_forecast_dhp_by_week uf -- bring in the dhp forecast
 on p.model_name = uf.model

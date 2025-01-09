@@ -20,9 +20,9 @@ select
 	,ed.wm_date as wm_end_date
 	,ft.funding_type_id
 from clean_data.item_grouping ig
-left join power_bi.dim_wm_item_id i
+left join dim_sources.dim_wm_item_id i
 on ig.item_id = i.item_id
-left join power_bi.dim_models m
+left join dim_sources.dim_models m
 on ig.model = m.model_name
 left join power_bi.wm_calendar_view sd -- start date
 on ig.start_date = sd.date
@@ -38,9 +38,9 @@ left join divisions d
 on mcl.division = d.division_name
 left join power_bi.group_id_view g
 on ig.item_id = g.tool_id
-left join power_bi.dim_group_type gt
+left join dim_sources.dim_group_type gt
 on ig.group_type = gt.group_type
-left join power_bi.dim_funding_type ft
+left join dim_sources.dim_funding_type ft
 on ft.funding_type = ig.funding_type
 )
 ;

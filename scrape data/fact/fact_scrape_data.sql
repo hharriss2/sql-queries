@@ -9,23 +9,23 @@ select
 	,pn.product_name_id
 	,m.model_id
 	,d.division_id
-	,br.brand_id
+	,br.brand_id::bigint as brand_id
 	,cbm.cbm_id
 	,mcl.is_top_100_item
 from clean_data.master_com_list mcl
-join power_bi.dim_wm_item_id i
+join dim_sources.dim_wm_item_id i
 on mcl.item_id = i.item_id
 left join group_ids g 
 on mcl.item_id = g.tool_id
-left join power_bi.brand_name br
+left join dim_sources.dim_brand_name br
 on mcl.brand_name = br.brand_name
-left join power_bi.dim_models m 
+left join dim_sources.dim_models m 
 on mcl.model = m.model_name
 left join cat_by_model cbm
 on mcl.model = cbm.model
 left join divisions d
 on mcl.division = d.division_name
-left join power_bi.dim_product_names pn
+left join dim_sources.dim_product_names pn
 on mcl.product_name = pn.product_name
 )
 
@@ -55,11 +55,10 @@ join mcl
 on s.item_id = mcl.item_id
 join power_bi.wm_calendar_view wcal
 on s.date_inserted = wcal.date
-left join power_bi.dim_price_display_code pdc1
+left join dim_sources.dim_price_display_code pdc1
 on s.price_display_code = pdc1.price_display_code
-left join power_bi.dim_price_display_code pdc2
+left join dim_sources.dim_price_display_code pdc2
 on s.price_display_code_2  = pdc2.price_display_code
 where s.item_id in (select item_id from dapl_raw.blue_cart_item_scrape)
-limit 10000
 )
 ;

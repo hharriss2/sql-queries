@@ -48,15 +48,15 @@ select
 from pos_reporting.dsv_orders_3p_recon dr
 left join oz 
 on oz.zipcode = dr.origin_postal_code
-left join power_bi.dim_models dm
+left join dim_sources.dim_models dm
 on dr.model = dm.model_name
-left join power_bi.dim_wm_item_id di
+left join dim_sources.dim_wm_item_id di
 on dr.item_id = di.item_id
-left join power_bi.dim_product_names dp
+left join dim_sources.dim_product_names dp
 on dr.product_name = dp.product_name
 left join power_bi.wm_calendar_view cal
 on dr.order_date = cal.date 
-left join power_bi.dim_order_status os
+left join dim_sources.dim_order_status os
 on dr.status = os.order_status_name
 left join cat_by_model cbm
 on dr.model = cbm.model

@@ -39,7 +39,7 @@ and slw1.page_number = slw2.min_page_num
 ,id as --item ids
 (
 select * 
-from power_bi.dim_wm_item_id
+from dim_sources.dim_wm_item_id
 )
 ,mrs as 
 (

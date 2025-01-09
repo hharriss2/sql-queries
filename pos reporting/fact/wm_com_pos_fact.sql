@@ -31,17 +31,17 @@ FROM pos_reporting.wm_com_pos
 SELECT 
     item_id as tool_id
     ,item_id_id::bigint as tool_id_id
-FROM power_bi.dim_wm_item_id
+FROM dim_sources.dim_wm_item_id
 )
 , pnv AS (
     SELECT product_name,
         product_name_id::bigint as product_name_id
-    FROM power_bi.dim_product_names
+    FROM dim_sources.dim_product_names
 )
 , mv AS (
     SELECT model_name,
         model_id::bigint as model_id
-    FROM power_bi.dim_models
+    FROM dim_sources.dim_models
 )
 , wc_ty AS (
     SELECT DISTINCT t1.wm_date,
@@ -75,7 +75,7 @@ FROM power_bi.dim_wm_item_id
 , bn AS (
     SELECT brand_id::bigint as brand_id,
     brand_name
-    FROM power_bi.dim_brand_name
+    FROM dim_sources.dim_brand_name
 )
 , d AS (
     SELECT divisions_view.division_id,
@@ -85,8 +85,8 @@ FROM power_bi.dim_wm_item_id
 , bid AS (
 SELECT 
     item_id as tool_id
-    ,item_id_id as tool_id_id
-FROM power_bi.dim_item_id_view_pos
+    ,item_id_id::bigint as tool_id_id
+FROM dim_sources.dim_wm_item_id
 )
 ,budcal as --walmart budget calendar
 ( -- assign the walmart calendar id for the budget calendar

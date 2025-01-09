@@ -50,9 +50,9 @@ left join scrape_data.most_recent_scrape mrs
 on dr.item_id = mrs.item_id
 left join lookups.item_status_3p is3
 on is3.item_id = dr.item_id
-left join power_bi.dim_item_status_3p dis3
+left join dim_sources.dim_item_status_3p dis3
 on is3.status_name = dis3.status_name
-left join power_bi.dim_wm_item_id di
+left join dim_sources.dim_wm_item_id di
 on dr.item_id = di.item_id
 left join dl
 on dr.model = dl.model

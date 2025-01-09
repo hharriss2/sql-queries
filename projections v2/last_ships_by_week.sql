@@ -54,7 +54,7 @@ select model as model_name
 from cat_by_model cbm
 join cal_1
 on 1=1
-join power_bi.dim_models m 
+join dim_sources.dim_models m 
 on cbm.model = m.model_name
  where model in (select distinct model from ships_schema.ships)
 )

@@ -29,11 +29,11 @@ left join divisions d
 on d.division_name = mcl.division
 left join group_ids g 
 on r.item_id = g.tool_id
-left join power_bi.dim_ships_item_id i
+left join dim_sources.dim_ships_item_id i
 on r.item_id::text = i.item_id
-left join power_bi.dim_models m 
+left join dim_sources.dim_models m 
 on r.model = m.model_name
-left join power_bi.dim_product_names p
+left join dim_sources.dim_product_names p
 on r.product_name = p.product_name
 where status !='Refund'
 )

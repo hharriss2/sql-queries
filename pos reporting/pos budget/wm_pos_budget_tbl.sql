@@ -37,7 +37,7 @@ select
 		then 'Stores'
 		end as retail_type
     ,now() as inserted_at
-from staging_wm_pos_budget tf  -- table from google sheets to postgres
+from dapl_raw.staging_wm_pos_budget tf  -- table from google sheets to postgres
 join wb
 on tf.wm_week = wb.wm_date
 left join category c 

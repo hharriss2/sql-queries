@@ -78,7 +78,7 @@ wc.item_id
 ,sm.division
 ,max(wc.product_name) as product_name
 from wc
- join sm
+join sm
 on wc.upc_key = sm.upc_key
 group by wc.item_id, sm.model,sm.division
 )

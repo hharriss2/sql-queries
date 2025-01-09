@@ -1,5 +1,5 @@
 --inserts the shelf position data into scrape_data.shelf_position
-create view dapl_raw.shelf_position_insert as 
+create or replace view dapl_raw.shelf_position_insert as 
 (
 with sa as  -- search api 
 (
@@ -15,7 +15,7 @@ group by request_type, request_term
 ,id as --item ids
 (
 select * 
-from power_bi.dim_wm_item_id
+from dim_sources.dim_wm_item_id
 )
 ,mrs as 
 (

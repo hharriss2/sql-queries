@@ -84,13 +84,19 @@ select
 		else null
 		end as matrix_units
 	,projected_forecast_type_id
+	,sum(case
+		when p.wm_year = '2026'
+		then p.total_units
+		else null
+		end) over (partition by model_name, p.wm_date) 
+		as total_units_2025
 from projections.projected_units_by_week_mat_view p
 left join projections.retail_trend rt
 on p.item_id = rt.item_id
 and p.wm_cal_id = rt.wm_cal_id
-left join power_bi.dim_product_names pn
+left join dim_sources.dim_product_names pn
 on p.product_name = pn.product_name
-left join power_bi.dim_wm_item_id id
+left join dim_sources.dim_wm_item_id id
 on id.item_id = p.item_id
 left join power_bi.wm_budget_calendar wcal
 on wcal.wm_cal_id = p.wm_cal_id
@@ -100,11 +106,10 @@ left join power_bi.divisions_view d
 on p.division = d.division_name
 left join category c 
 on p.cat = c.category_name
-left join power_bi.dim_forecast_type 
+left join dim_sources.dim_forecast_type 
 on 1=1
 left join forecast.forecast_dhp fdhp
-on p.model = fdhp.model
-and 
-limit 10000
+on p.model_name = fdhp.model
+
 )
 ;

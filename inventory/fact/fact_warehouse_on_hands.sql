@@ -5,16 +5,21 @@ with sfc as --stores forecast
 ( -- find the forecast by walmart item number, idc & rdc so we can join it up to the warehouse numbers
 select
 walmart_item_number
-,soh.distribution_center_number
-,soh.storage_distribution_center_number
+,distribution_center_number
+,storage_distribution_center_number
 ,sum(wsf.forecast_quantity) dc_forecast_quantity
-from inventory.wm_store_on_hands soh
-left join forecast.wm_store_forecast wsf
-on soh.walmart_item_number = wsf.prime_item_number
-and soh.store_number = wsf.store_number
+from forecast.wm_store_forecast wsf
 group by walmart_item_number,distribution_center_number,storage_distribution_center_number
 )
-select woh.*
+select woh.inventory_date
+    ,woh.walmart_item_number
+    ,woh.item_name
+    ,woh.storage_distribution_center_number
+    ,woh.distribution_center_number
+    ,woh.vendor_number
+    ,woh.on_hand_warehouse_inventory_in_units_this_year
+    ,woh.on_order_warehouse_quantity_in_units_this_year
+    ,woh.inserted_at
 	,cbm.cbm_id
 	,din.item_number_id
 	,sfc.dc_forecast_quantity/4 as dc_forecast_quantity

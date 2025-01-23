@@ -10,13 +10,15 @@ from lookups.current_wm_week_order
 select * 
 from lookups.current_month_order
 )
+,details as 
+(
 SELECT
     id AS wmcal_id
     ,date
     ,w.wm_week
     ,wm_year
     ,wm_date
-    ,COALESCE(wm_sale_month,
+   ,COALESCE(wm_sale_month,
         CASE
             WHEN w.wm_week = '1'::text THEN 'February'::text
             ELSE btrim(to_char(date::timestamp with time zone, 'Month'::text))
@@ -51,7 +53,7 @@ SELECT
         	when max(case when current_date = date then wm_date else null end) over() = wm_date
         	then 1
         	else 0 
-        	end as is_current_wm_week
+        	end as is_current_wm_week        	
         --^if the date is in the current wm week, then 1 else 0
         ,case -- take the wm date from a week ago and compare it to the wm date for each row
         	when max(case when current_date - interval '7 days'= date  then wm_date else null end) over() = wm_date
@@ -66,12 +68,53 @@ SELECT
         	else 0
         	end as is_last_4_weeks
         --finds the wm date before the current week
+        ,case -- when the date is today, apply wm date to every row, then compare wm date
+        	when max(case when current_date = date then wm_date::integer else null end) over() - 100 = wm_date::integer
+        	then 1
+        	else 0 
+        	end as is_current_wm_week_ly
+        ,case -- boolean if the rows wm_year is the current wm year
+        	when max( case when current_date = date then wm_year else null end) over() = wm_year
+        	then 1
+        	else 0
+        	end as current_wm_year
+		,case -- boolean for the current wm years year to date by wm week
+			when max( case when current_date = date then wm_year else null end) over() = wm_year
+			and max(case when current_date = date then wm_date::integer else null end) over() >= wm_date::integer
+			then 1 
+			else 0 
+			end as is_ytd_wm_week
+		,max(case when current_date = date then wm_date else null end) over () as current_wm_date
 FROM wm_calendar w
 left join wo
 on w.wm_week::integer = wo.wm_week
 left join mo 
 on date_part('month',w.date) = mo.month_num
 where 1=1
-and date <=current_date
-order by date desc
 )
+SELECT
+    wmcal_id
+    ,date
+    ,wm_week
+    ,wm_year
+    ,wm_date
+    ,month
+    ,wm_quarter
+    ,is_mtd_ey -- month to date every year
+	,is_ytd_ey --year to date every year
+	,current_wm_week_seq
+    ,month_num
+    ,current_month_seq
+    ,wm_day_of_week 
+    ,is_current_wm_week
+	,previous_wm_week
+    ,is_last_4_weeks
+    ,is_current_wm_week_ly
+    ,current_wm_year
+	,is_ytd_wm_week
+	,max(case when current_date = date then wm_day_of_week else null end) over() as current_wm_day_of_week
+FROM details
+where 1=1
+-- and date <=current_date
+-- order by date desc
+);

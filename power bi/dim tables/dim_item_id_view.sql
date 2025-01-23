@@ -1,5 +1,5 @@
 --used for wm pos fact tables. includes every id used in these tables
-create or replace view power_bi.dim_item_id_view_pos as 
+create or replace view dim_sources.dim_item_id_view_pos as 
 (
 with com as --com item ids
 (

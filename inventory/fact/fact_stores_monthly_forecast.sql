@@ -12,7 +12,7 @@ walmart_item_number
 --,wm.week_average
 from inventory.wm_store_on_hands soh
 join forecast.wm_store_forecast wsf
-on soh.walmart_item_number = wsf.prime_item_number
+on soh.walmart_item_number = wsf.walmart_item_number
 and soh.store_number = wsf.store_number
 --join lookups.wm_month_ordering_next_year wm
 --on 1=1

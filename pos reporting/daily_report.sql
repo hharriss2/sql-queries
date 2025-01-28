@@ -1,13 +1,21 @@
 --report used to replicate the daily report sent out every day
+create or replace view pos_reporting.daily_report as 
+(
 with sa as --stores aggregate
 ( -- aggregating units and sales for stores 
 select
-	vendor_nbr
-	,prime_item_nbr
+    prime_item_nbr
 	,mcl.model
 	,ls.unit_retail
 	,ls.prime_item_desc
 	,ls.vendor_stock_number
+    ,ls.is_special_buy
+    ,ls.item_status
+    ,ls.current_item_num
+    ,ls.unit_cost
+    ,ls.landed_cost
+    ,pt.vendor_pack_quantity
+    ,pt.item_type_code
 	,sum( -- week to date units
 		case
 		when wcal.is_current_wm_week =1  -- store sales are in current wm week
@@ -70,30 +78,45 @@ left join power_bi.wm_calendar_view wcal
 on ssa.daily = wcal.date
 left join pos_reporting.lookup_stores ls
 on ssa.prime_item_nbr::bigint = ls.prime_item_num
+left join lookups.vendor_number_clean vnc
+on ssa.vendor_nbr = vnc.vendor_nbr
+left join lookups.store_pack_type_tbl pt
+on pt.item_nbr = prime_item_nbr::bigint
 where 1=1
 and daily is not null
-and prime_item_nbr = '550955318'
+and ls.is_daily_item =1
+-- and vendor_nbr_dept = '71' -- daily is only for department 71
+-- and prime_item_nbr = '550955318'
 --and daily >= current_date - interval '400 days'
-group by vendor_nbr
-	,prime_item_nbr
+group by prime_item_nbr
 	,mcl.model
 	,ls.prime_item_desc
+    ,ls.unit_cost
 	,ls.vendor_stock_number
 	,ls.unit_retail
+    ,ls.is_special_buy
+    ,ls.item_status
+    ,ls.landed_cost
+    ,ls.current_item_num
+    ,pt.vendor_pack_quantity
+    ,pt.item_type_code
 )
 ,sia as --stores inventory aggregate
 (
 select
-	prime_item_nbr
-	,sum(on_hand_qty) as store_on_hand
-	,sum(in_warehouse_qty) as store_in_warehouse
-	,sum(in_transit_qty) as store_in_transit
-	,sum(on_hand_qty) 
-	+ sum(in_warehouse_qty)
-	+ sum(in_transit_qty)
+	walmart_item_number
+	,on_hand_qty as store_on_hand
+	,in_warehouse_qty as store_in_warehouse
+	,in_transit_qty as store_in_transit
+	,on_hand_qty 
+	+ in_warehouse_qty
+	+ in_transit_qty
 	 as store_inventory
+	,traited_store_count_this_year
+	,traited_store_count_last_year
+	,curr_repl_instock
+	,repl_instock_percentage_last_year 
 from pos_reporting.inventory_stores
-group by prime_item_nbr
 )
 ,wia as --warehosue inventory aggregate
 (
@@ -104,19 +127,19 @@ from inventory.wm_warehouse_on_hands w
 group by walmart_item_number
 )
 select
-	sa.vendor_nbr
-	,sa.prime_item_nbr
+	sa.prime_item_nbr
+    ,sa.current_item_num
 	,vendor_stock_number
 	,sa.model
 	,sa.prime_item_desc
-	--status
-	--pack size
-	--special buy
-	--item type code
+	,sa.item_status
+	,sa.is_special_buy
+	,sa.item_type_code
+    ,sa.vendor_pack_quantity
 	,sa.unit_retail
 	,cast(ytd_sales/ ytd_units as numeric(10,2)) as average_retail
-	--unit cost
-	--landed cost
+	,sa.unit_cost
+	,sa.landed_cost
 	,wtd_units --wtd pos qty
 	,wtd_ly_units --ly wtd pos qty
 	,cast((wtd_units - wtd_ly_units)/nullif(wtd_ly_units::numeric(10,2),0) as numeric(10,2)) as ly_wtd_pos_units_change
@@ -124,6 +147,7 @@ select
 	,last_week_units
 	,last_4_weeks_units -- l4 wks pos qty
 	,last_4_weeks_units::numeric(10,2)/4 as average_weekly_units --avg weekly pos qty
+    ,ytd_units
 	,ytd_sales --ty fytd pos sales
 	,wtd_sales --wtd pos sales
 	,wtd_ly_sales --ly wtd pos sales
@@ -135,15 +159,20 @@ select
 	--wks of supply based on lw pos qty =  inventory divided by total units sold last week
 	,coalesce(store_inventory::numeric(10,2)/nullif(last_4_weeks_units/4,0),0) as weeks_of_supply_l4
 	--wkes of supply based on l4 wks avg pos qty
-	-- need curr traited store count
-	--need ly store count
-	--replin instock
-	--replin instock last year
+    ,sia.traited_store_count_this_year
+	,sia.traited_store_count_last_year
+	,sia.curr_repl_instock
+	,sia.repl_instock_percentage_last_year 
+    ,cast(wtd_units::numeric(10,2)/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as wtd_units_per_traited_store
+    --wtd units per traited stores
+    ,cast(wtd_sales/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as  wtd_sales_per_traited_store
 	--wtd sales per traited stores
-	--wtd units per traited stores
+    ,current_date::date as todays_date
+	
 from sa
 left join sia
-on sa.prime_item_nbr::bigint = sia.prime_item_nbr
+on sa.prime_item_nbr::bigint = sia.walmart_item_number
 left join wia
 on sa.prime_item_nbr::bigint = wia.walmart_item_number
+)
 ;

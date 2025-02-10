@@ -8,7 +8,7 @@ select
 	,coalesce(msl.product_name,w.product_name) as product_name
 	,w.item_id as item_id_3p
 	,now() as updated_on
-from clean_data.wm_catalog_3p w
+from clean_data.current_wm_catalog_3p w
 left join clean_data.master_ships_list msl
 on w.model = msl.model
 where 1=1

@@ -4,18 +4,18 @@ create or replace view pos_reporting.daily_report as
 with sa as --stores aggregate
 ( -- aggregating units and sales for stores 
 select
-    prime_item_nbr
+	ls.current_item_num
 	,mcl.model
 	,ls.unit_retail
 	,ls.prime_item_desc
 	,ls.vendor_stock_number
     ,ls.is_special_buy
     ,ls.item_status
-    ,ls.current_item_num
     ,ls.unit_cost
     ,ls.landed_cost
-    ,pt.vendor_pack_quantity
-    ,pt.item_type_code
+    ,vendor_nbr_dept
+    ,coalesce(ls.pack_size,pt.vendor_pack_quantity) as vendor_pack_quantity
+   ,max(pt.item_type_code) as item_type_code
 	,sum( -- week to date units
 		case
 		when wcal.is_current_wm_week =1  -- store sales are in current wm week
@@ -71,24 +71,33 @@ select
 		then pos_sales
 		else null end
 		) as ytd_sales
+    ,mcl.division
+    ,cbm.cat
+    ,cbm.sub_cat
 from sales_stores_auto ssa
-left join clean_data.master_com_list mcl
-on ssa.prime_item_nbr::bigint = mcl.item_id
+
 left join power_bi.wm_calendar_view wcal 
 on ssa.daily = wcal.date
 left join pos_reporting.lookup_stores ls
 on ssa.prime_item_nbr::bigint = ls.prime_item_num
+left join clean_data.master_com_list mcl
+on ls.current_item_num::bigint = mcl.item_id
 left join lookups.vendor_number_clean vnc
 on ssa.vendor_nbr = vnc.vendor_nbr
 left join lookups.store_pack_type_tbl pt
 on pt.item_nbr = prime_item_nbr::bigint
+left join cat_by_model cbm
+on mcl.model = cbm.model
 where 1=1
 and daily is not null
 and ls.is_daily_item =1
+and ls.item_status not like '%Delete%'
 -- and vendor_nbr_dept = '71' -- daily is only for department 71
 -- and prime_item_nbr = '550955318'
 --and daily >= current_date - interval '400 days'
-group by prime_item_nbr
+group by 
+	ls.current_item_num
+    ,vendor_nbr_dept
 	,mcl.model
 	,ls.prime_item_desc
     ,ls.unit_cost
@@ -97,26 +106,30 @@ group by prime_item_nbr
     ,ls.is_special_buy
     ,ls.item_status
     ,ls.landed_cost
-    ,ls.current_item_num
-    ,pt.vendor_pack_quantity
-    ,pt.item_type_code
+    ,coalesce(ls.pack_size,pt.vendor_pack_quantity)
+--    ,coalesce(ls.item_type_code,pt.item_type_code)
+    ,mcl.division
+    ,cbm.cat
+    ,cbm.sub_cat
 )
+
 ,sia as --stores inventory aggregate
 (
 select
-	walmart_item_number
-	,on_hand_qty as store_on_hand
-	,in_warehouse_qty as store_in_warehouse
-	,in_transit_qty as store_in_transit
-	,on_hand_qty 
+	all_links_item_number 
+	,sum(on_hand_qty) as store_on_hand
+	,sum(in_warehouse_qty) as store_in_warehouse
+	,sum(in_transit_qty) as store_in_transit
+	,sum(on_hand_qty 
 	+ in_warehouse_qty
-	+ in_transit_qty
+	+ in_transit_qty)
 	 as store_inventory
-	,traited_store_count_this_year
-	,traited_store_count_last_year
-	,curr_repl_instock
-	,repl_instock_percentage_last_year 
+	,sum(traited_store_count_this_year) as traited_store_count_this_year
+	,sum(traited_store_count_last_year) as traited_store_count_last_year
+	,max(curr_repl_instock) as curr_repl_instock
+	,max(repl_instock_percentage_last_year ) as repl_instock_percentage_last_year 
 from pos_reporting.inventory_stores
+group by all_links_item_number
 )
 ,wia as --warehosue inventory aggregate
 (
@@ -127,8 +140,8 @@ from inventory.wm_warehouse_on_hands w
 group by walmart_item_number
 )
 select
-	sa.prime_item_nbr
-    ,sa.current_item_num
+	-- sa.prime_item_nbr
+    sa.current_item_num
 	,vendor_stock_number
 	,sa.model
 	,sa.prime_item_desc
@@ -168,11 +181,30 @@ select
     ,cast(wtd_sales/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as  wtd_sales_per_traited_store
 	--wtd sales per traited stores
     ,current_date::date as todays_date
-	
+	,division
+    ,cat
+    ,sub_cat
+    ,vendor_nbr_dept
+    ,case
+        when vendor_nbr_dept = '71'
+        and division in('Ameriwood','Dorel Home Products')
+        then 'D71 - DHF'
+        when vendor_nbr_dept = '71'
+        and division = 'Cosco Products'
+        then 'D71 - Cosco'
+        when vendor_nbr_dept = '12'
+        and division = 'Cosco Products'
+        then 'D12 - Cosco'
+        when vendor_nbr_dept = '79'
+        and division = 'Dorel Home Products'
+        then 'D79 - DHF'
+        else null
+        end as department_title
+    ,'Daily Report ' ||current_date::date as file_name
 from sa
 left join sia
-on sa.prime_item_nbr::bigint = sia.walmart_item_number
+on sa.current_item_num::bigint = sia.all_links_item_number
 left join wia
-on sa.prime_item_nbr::bigint = wia.walmart_item_number
+on sa.current_item_num::bigint = wia.walmart_item_number
 )
 ;

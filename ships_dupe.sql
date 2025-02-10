@@ -1,56 +1,28 @@
-walmart_calendar_week
-business_date
-prime_item_number
-store_item_id
-walmart_upc_number
-walmart_item_number
-vendor_name
-vendor_number
-vendor_department_number
-vendor_stock_id
-fineline_description
-fineline_number
-base_unit_retail_amount
-item_name
-all_links_item_number
-unit_cost_amount
-item_type_code
-vendor_pack_quantity
-pos_quantity_this_year
-pos_sales_this_year
-repl_instock_percentage_this_year
-store_on_hand_quantity_this_year
-store_in_warehouse_quantity_this_year
-store_on_order_quantity_this_year
-store_in_transit_quantity_this_year
-repl_instock_percentage_last_year
-traited_store_count_last_year
-traited_store_count_this_year
+import { axios } from "@pipedream/platform"
+import xlsx from "xlsx"
+import fs from "fs"
 
-business_date
-walmart_calendar_week
-prime_item_number
-unit_cost_amount
-store_item_id
-walmart_upc_number
-walmart_item_number
-vendor_name
-vendor_number
-vendor_department_number
-vendor_stock_id
-fineline_description
-fineline_number
-base_unit_retail_amount
-item_name
-item_type_code
-vendor_pack_quantity
-pos_quantity_this_year
-pos_sales_this_year
-repl_instock_percentage_this_year
-repl_instock_percentage_last_year
-store_on_hand_quantity_this_year
-store_in_warehouse_quantity_this_year
-store_on_order_quantity_this_year
-traited_store_count_this_year
-traited_store_count_last_year
-store_in_transit_quantity_this_year
+export default defineComponent({
+  async run({steps, $}) {
+    // Get the query results from the previous step
+    const data = steps.detailed_file.$return_value
+    
+    // Create a new workbook and worksheet
+    const wb = xlsx.utils.book_new()
+    const ws = xlsx.utils.json_to_sheet(data)
+    xlsx.utils.book_append_sheet(wb, ws, "Query Results")
+    
+    // Write to /tmp directory
+    const filename = `/tmp/Daily Report ${steps.overview_metrics.$return_value[0].report_date}.xlsx`
+    xlsx.writeFile(wb, filename)
+    
+    // Return the file path and basic stats
+    const stats = fs.statSync(filename)
+    return {
+      filename,
+      size: stats.size,
+      rows: data.length,
+      created: stats.birthtime
+    }
+  },
+})

@@ -1,4 +1,3 @@
-
 --fact table for the dsv 3p recon report on power bi
 create or replace view power_bi.fact_dsv_recon_3p as 
 (
@@ -15,6 +14,20 @@ select *
 from lookups.internal_item_status_view
 where item_status in 
 ('Production - Obsolete','Production - Site Closeout') -- these statuses are considered 'Disco'
+)
+,td as  --time diff
+( -- finding the number of days and hours it takes for an item to go from order to shipped
+select sku as model
+	,shipped_on - order_date as order_to_shipped_time_diff
+from pos_reporting.dsv_orders_3p
+where shipped_on is not null
+)
+,ai as --average item
+( -- take the average time for the time diff clause per item
+select model
+	,avg(order_to_shipped_time_diff)::interval as avg_time_to_ship
+from td
+group by model
 )
 select
 	dr.dsv_order_id
@@ -45,6 +58,22 @@ select
 		then 1
 		else 0
 		end as is_disco
+	,coalesce(ai.avg_time_to_ship,est_ship_date::timestamp - order_date_time) as avg_time_to_ship
+	,current_date - dr.order_date_time as current_time_without_ship
+	--^ if there isn't a average for the item, use the estimated ship date
+	,case -- the current time for the shipped date is 1 day after the average
+		when dr.status = 'Acknowledged'
+			and order_date >='2024-10-20' 
+			and current_date - dr.order_date_time
+			>=coalesce(ai.avg_time_to_ship,est_ship_date::timestamp - order_date)
+		then 1
+		else 0
+		end as past_avg_time_flag
+	,case -- so we know if the past avg time flag is going off of the estimated ship date or the actual avg time to ship
+		when ai.avg_time_to_ship is null
+		then 0
+		else 1
+		end as has_avg_time_to_ship
 from pos_reporting.dsv_orders_3p_recon dr
 left join oz 
 on oz.zipcode = dr.origin_postal_code
@@ -66,6 +95,8 @@ left join power_bi.group_id_view g
 on dr.item_id = g.tool_id
 left join dl
 on dr.model = dl.model
+left join ai
+on ai.model = dr.model
 where dr.status !='Refund'
 )
 ;

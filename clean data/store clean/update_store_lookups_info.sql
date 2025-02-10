@@ -1,6 +1,7 @@
 --unique and most recent vendor stock nummber, item description, and unit retail for the store sales
-create table update_vendor_stk  as 
-(
+insert into pos_reporting.lookup_stores (prime_item_num, vendor_stock_number, prime_item_desc,unit_retail)
+--START SELECT QUERY
+    -- findS unique vendor #, item description, & unit retail
 with t1 as 
 (
 select
@@ -13,7 +14,8 @@ select
 from sales_stores_auto
 where vendor_stk_nbr is not null
 )
-
+,t2 as 
+(
 select distinct
 	prime_item_nbr
 	,max(vendor_stk_nbr) as vendor_stk_nbr
@@ -24,20 +26,16 @@ where 1=1
 and daily = latest_day
 group by prime_item_nbr
 )
-
-;
--- upserting into the daily
-insert into pos_reporting.lookup_stores(prime_item_num, vendor_stock_number, prime_item_desc,unit_retail
-)
 select prime_item_nbr::bigint
 	,vendor_stk_nbr
 	,prime_item_desc
 	,unit_retail::numeric(10,2)
-from update_vendor_stk
+from t2
+--END SELECT QUERY
+--Finish with upserting
 on conflict(prime_item_num)
 do update set 
 vendor_stock_number = excluded.vendor_stock_number
 , prime_item_desc = excluded.prime_item_desc
 ,unit_retail = excluded.unit_retail
 ;
-

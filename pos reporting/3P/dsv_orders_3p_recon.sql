@@ -24,6 +24,7 @@ select
 	,shipped_on
 	,delivered_on
 	,coalesce(wc.item_status,'Not Found') as item_status
+	,est_ship_date
 from pos_reporting.dsv_orders_3p ord
 left join clean_data.current_wm_catalog_3p w -- list of all models that have ran dsv
 on ord.sku = w.model
@@ -96,7 +97,7 @@ select
 	dsv_order_id
 	,o.po_id
 	,o.tracking_number
-	,o.order_date::date
+	,o.order_date::date as order_date
 	,o.model
 	,o.item_id
 	,o.product_name
@@ -122,6 +123,8 @@ select
 	,shipped_on
 	,delivered_on
 	,item_status
+	,o.est_ship_date
+	,o.order_date as order_date_time
 from o 
 left join comm
 on o.po_id = comm.po_id

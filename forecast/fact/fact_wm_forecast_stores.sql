@@ -45,6 +45,9 @@ select distinct
     ,coalesce(ssa.total_pos_units,0) as total_pos
     ,coalesce(ssa.total_pos_units,0)::numeric(10,2)/ forecast_units::numeric(10,2) as consumption_perc
 	,wcal.id
+	,cbm.cat
+	,cbm.sub_cat
+	,fs.forecast_date
 from  fs -- forecast uploaded from what walmart provides
 left join clean_data.master_com_list mcl -- used to assign a model number
 on fs.item_number = mcl.item_id
@@ -53,6 +56,8 @@ on fs.forecast_date = wcal.date
 left join ssa
 on ssa.item_number = fs.item_number
 and wcal.wm_date::integer = ssa.wm_date
+left join cat_by_model cbm
+on mcl.model = cbm.model
 where 1=1
 and fs.forecast_version_seq = 1
 )

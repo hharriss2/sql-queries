@@ -48,6 +48,7 @@ select distinct
 	,cbm.cat
 	,cbm.sub_cat
 	,fs.forecast_date
+	,1 as retail_type_id
 from  fs -- forecast uploaded from what walmart provides
 left join clean_data.master_com_list mcl -- used to assign a model number
 on fs.item_number = mcl.item_id

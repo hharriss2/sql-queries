@@ -7,7 +7,7 @@ select
 	ls.current_item_num
 	,mcl.model
 	,ls.unit_retail
-	,ls.prime_item_desc
+	,max(ls.item_description) as prime_item_desc
 	,ls.vendor_stock_number
     ,ls.is_special_buy
     ,ls.item_status
@@ -43,12 +43,19 @@ select
 		else null end
 		) as wtd_ly_sales
 	,sum 
-		( -- sales for the previous walmart week
+		( -- units for the previous walmart week
 		case
 		when wcal.previous_wm_week = 1
 		then pos_qty
 		else null end
 		) as last_week_units
+	,sum 
+		( -- sales for the previous walmart week
+		case
+		when wcal.previous_wm_week = 1
+		then pos_sales
+		else null end
+		) as last_week_sales
 	,sum
 		( -- sales for the previous 4 walmart weeks, not including the current
 		case
@@ -56,6 +63,13 @@ select
 		then pos_qty
 		else null end 
 		) as last_4_weeks_units
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_13_weeks = 1
+		then pos_qty
+		else null end 
+		) as last_13_weeks_units
 --	,-- avg weekly pos qty = l4 weeks divided by 4
 	,sum
 		( -- year to date sales in units
@@ -99,7 +113,7 @@ group by
 	ls.current_item_num
     ,vendor_nbr_dept
 	,mcl.model
-	,ls.prime_item_desc
+--	,ls.prime_item_desc
     ,ls.unit_cost
 	,ls.vendor_stock_number
 	,ls.unit_retail
@@ -120,6 +134,7 @@ select
 	,sum(on_hand_qty) as store_on_hand
 	,sum(in_warehouse_qty) as store_in_warehouse
 	,sum(in_transit_qty) as store_in_transit
+    ,sum(on_order_qty) as store_on_order
 	,sum(on_hand_qty 
 	+ in_warehouse_qty
 	+ in_transit_qty)
@@ -136,8 +151,17 @@ group by all_links_item_number
 select 
 	walmart_item_number
 	,sum(w.on_hand_warehouse_inventory_in_units_this_year) as warehouse_inventory
+	,sum(w.on_order_warehouse_quantity_in_units_this_year) as warehouse_on_order
 from inventory.wm_warehouse_on_hands w
 group by walmart_item_number
+)
+,sfc as --store forecast
+(
+select
+	prime_item_number
+	,sum(forecast_quantity) as forecast_n13w
+from forecast.wm_store_forecast
+group by prime_item_number
 )
 select
 	-- sa.prime_item_nbr
@@ -168,18 +192,18 @@ select
 	--^ ly wtd pos $ % change (current wtd - ly wtd) / ly wtd
 	,store_inventory --inventory in store
 	,wia.warehouse_inventory -- inventory in warehouse
-	,coalesce(store_inventory::numeric(10,2)/nullif(last_week_units,0),0) as weeks_of_supply_lw
-	--wks of supply based on lw pos qty =  inventory divided by total units sold last week
-	,coalesce(store_inventory::numeric(10,2)/nullif(last_4_weeks_units/4,0),0) as weeks_of_supply_l4
-	--wkes of supply based on l4 wks avg pos qty
+	,coalesce((store_inventory::numeric(10,2) + warehouse_inventory)/nullif((forecast_n13w)/13,0),0) as weeks_of_supply_inventory_warehouse
+	--(inventory + warehouse) / (next 13 weeks forecast divided by 13)
+	,coalesce(warehouse_on_order::numeric(10,2)/nullif((forecast_n13w)/13,0),0) as weeks_of_supply_on_order
+	--(OO) / (last 4 weeks + next 4 weeks for forecast)
     ,sia.traited_store_count_this_year
 	,sia.traited_store_count_last_year
 	,sia.curr_repl_instock
 	,sia.repl_instock_percentage_last_year 
-    ,cast(wtd_units::numeric(10,2)/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as wtd_units_per_traited_store
-    --wtd units per traited stores
-    ,cast(wtd_sales/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as  wtd_sales_per_traited_store
-	--wtd sales per traited stores
+    ,cast(last_week_units::numeric(10,2)/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as wtd_units_per_traited_store
+    --last weeks units per traited stores 
+    ,cast(last_week_sales/nullif(sia.traited_store_count_this_year,0) as numeric(10,2)) as  wtd_sales_per_traited_store
+	--last weeks sales sales per traited stores
     ,current_date::date as todays_date
 	,division
     ,cat
@@ -198,13 +222,19 @@ select
         when vendor_nbr_dept = '79'
         and division = 'Dorel Home Products'
         then 'D79 - DHF'
+        when vendor_nbr_dept = '71'
+        then 'D71 - DF1'
         else null
         end as department_title
     ,'Daily Report ' ||current_date::date as file_name
+    ,store_on_order
+	,warehouse_on_order
 from sa
 left join sia
 on sa.current_item_num::bigint = sia.all_links_item_number
 left join wia
 on sa.current_item_num::bigint = wia.walmart_item_number
+left join sfc
+on sa.current_item_num::bigint = sfc.prime_item_number
 )
 ;

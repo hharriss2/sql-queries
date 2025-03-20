@@ -10,10 +10,14 @@ where item_status in
 )
 ,dc as 
 (
-select distinct model,dc.division_name, d.division_id
+select distinct model
+,max(dc.division_name) over (partition by model) as division_name
+,max(d.division_id) over(partition by model) as division_id
 from components.dorel_catalog dc
 left join divisions d
 on dc.division_name = d.division_name
+where 1=1
+
 )
 ,rc as --recon costs
 (-- report impliments both recon and costs for the order
@@ -21,7 +25,7 @@ select dr.*
 	,(ic.duty_cost * qty) as duty_cost
 	,(ic.material_cost * qty) as material_cost
 	,(ic.freight_cost * qty) as freight_cost
-	,(ic.overhead_cost * qty) as overhead_cost
+--	,(ic.overhead_cost * qty) as overhead_cost
 	,ic.contribution_profit_cost * qty as net_cost
 	-- ,ic.contribution_profit_cost_overhead * qty as cogs_overhead
 	,order_total + (commission_amt) - (rate_amount) as cogs
@@ -40,8 +44,9 @@ select dr.*
 	,cbm.cbm_id
 	,dc.division_id
 from pos_reporting.dsv_orders_3p_recon dr 
-left join components.item_costing_view ic
+left join item_costing.item_costing_view ic
 on dr.model = ic.model
+and dr.cost_date = ic.cost_date
 left join power_bi.wm_calendar_view wcv
 on dr.order_date = wcv.date
 left join components.dsv_3p_inventory_agg inv
@@ -63,6 +68,7 @@ on dr.model = dc.model
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
 )
+
 ,details as 
 (
 select 

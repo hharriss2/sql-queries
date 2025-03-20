@@ -23,7 +23,7 @@ insert into item_costing.item_costing_tbl
 	)
 select distinct
 	right(model,length(model) -2) ||'-'||warehouse_number::text||'-'||coalesce(origin_country,'N/A') ||'-'
-	||'2025-01-01' -- date that needs to be changed
+	||'-'||to_char(inserted_at,'YYMM') -- date that needs to be changed
 	--^composite key to find unqiue record based off model, warehouse & origin country
 	,right(model,length(model) -2)
 	,warehouse_number
@@ -45,5 +45,5 @@ select distinct
 from dapl_raw.internal_item_costing
 ;
 --fix the blank space  issue with the warehouse numbers
-update components.internal_item_costing
+update item_costing.item_costing_tbl
 set warehouse_number = rtrim(warehouse_number,' ') 

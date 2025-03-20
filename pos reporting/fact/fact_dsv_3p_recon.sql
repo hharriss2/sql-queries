@@ -29,6 +29,24 @@ select model
 from td
 group by model
 )
+,iinv as --internal inventory. inventory dorel has
+(
+select
+	model
+	,sum(quantity_on_hand) as quantity_on_hand
+	,sum(open_order_quantity) as open_order_quantity
+	,sum(po_quantity) as po_quantity
+from inventory.sf_item_inventory
+group by model
+)
+,eif as --ecomm inventory feeds 
+( -- feeds from dorel that show the ecommerce inventory feeds
+select model
+	,sum(feed_quantity) as feed_quantity
+from inventory.sf_ecomm_inventory_feeds eif
+where retailer_name = 'Walmart DHF Direct'
+group by model
+)
 select
 	dr.dsv_order_id
 	,dr.po_id
@@ -74,6 +92,10 @@ select
 		then 0
 		else 1
 		end as has_avg_time_to_ship
+    ,iinv.quantity_on_hand
+    ,iinv.open_order_quantity
+    ,iinv.po_quantity
+    ,eif.feed_quantity
 from pos_reporting.dsv_orders_3p_recon dr
 left join oz 
 on oz.zipcode = dr.origin_postal_code
@@ -97,6 +119,10 @@ left join dl
 on dr.model = dl.model
 left join ai
 on ai.model = dr.model
+left join iinv
+on dr.model = iinv.model
+left join eif
+on dr.model = eif.model
 where dr.status !='Refund'
 )
 ;

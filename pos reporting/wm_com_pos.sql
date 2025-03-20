@@ -56,7 +56,26 @@ from power_bi.promo_funding_pos_filter
 select *
 from account_manager_cat
 )
-
+,iinv as --internal inventory. inventory dorel has
+(
+select
+	model
+	,sum(quantity_on_hand) as quantity_on_hand
+	,sum(open_order_quantity) as open_order_quantity
+	,sum(po_quantity) as po_quantity
+from inventory.sf_item_inventory
+group by model
+)
+,eif as --ecomm inventory feeds 
+( -- feeds from dorel that show the ecommerce inventory feeds
+select
+	model
+	,sum(feed_quantity) as feed_quantity
+from inventory.sf_ecomm_inventory_feeds
+where 1=1
+and retailer_name = 'Walmart.com'
+group by model
+)
 select
     rs.id
     ,mcl.model
@@ -93,6 +112,11 @@ select
     end as item_type_id
     ,mcl.is_top_100_item
     ,rs.retail_type_id
+    ,iinv.quantity_on_hand
+    ,iinv.open_order_quantity
+    ,iinv.po_quantity
+    ,eif.feed_quantity
+    ,mcl.retail_type_assignment
 from rs
 left join mcl
 on rs.item_id = mcl.item_id
@@ -104,6 +128,10 @@ left join g
 on rs.item_id = g.tool_id
 left join cbid
 on g.group_id = cbid.group_id
+left join iinv
+on mcl.model = iinv.model
+left join eif
+on mcl.model = eif.model
 )
 ;
 

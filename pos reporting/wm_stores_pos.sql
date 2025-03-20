@@ -38,8 +38,7 @@ from lookups.item_status_store
 ,sia as  -- store inventory aggregate
 ( -- dataset is store inventory by store number. this clause aggregates it to the item level
 select
-	walmart_item_number
-	,item_name
+	all_links_item_number
     ,business_date
 	,sum(store_in_transit_quantity_this_year) as store_in_transit_quantity_this_year
 	,sum(store_in_warehouse_quantity_this_year) as store_in_warehouse_quantity_this_year
@@ -49,8 +48,7 @@ select
 from inventory.wm_store_on_hands
 where business_date = (select max(business_date) from inventory.wm_store_on_hands)
 --^ use the inventory levels from today
-group by walmart_item_number
-	,item_name
+group by all_links_item_number
     ,business_date
 )
 ,si as --store inventory
@@ -91,6 +89,7 @@ select
     ,mcl.is_lookup_update
     ,mcl.is_scrape_product_name
     ,mcl.is_top_100_item
+    ,mcl.retail_type_assignment
 from ssa
 left join mcl
 on ssa.prime_item_nbr = mcl.item_id
@@ -134,9 +133,10 @@ select
     ,si.store_on_order_quantity_this_year
     ,si.stores_on_hand
     ,si.traited_store_count_this_year
+    ,retail_type_assignment
 from details
 left join si
-on details.item_id = si.walmart_item_number 
+on details.item_id = si.all_links_item_number 
 and details.sale_date = si.business_date
 )
 ;

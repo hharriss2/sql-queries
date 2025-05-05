@@ -10,6 +10,36 @@ from lookups.current_wm_week_order
 select * 
 from lookups.current_month_order
 )
+,l4_wm_date as 
+(
+select distinct wm_date::integer as wm_date
+from wm_calendar
+where date <current_date
+and date!=current_date
+order by wm_date::integer desc limit 5
+)
+,l13_wm_date as 
+(
+select distinct wm_date::integer as wm_date
+from wm_calendar
+where date < current_date
+and date!=current_date
+order by wm_date::integer desc limit 14
+)
+,l52_wm_date as 
+(
+select distinct wm_date::integer as wm_date
+from wm_calendar
+where date < current_date
+and date!=current_date
+order by wm_date::integer desc limit 53
+)
+,current_wm_date as 
+(
+select distinct wm_date::integer as wm_date
+from wm_calendar
+where date= current_date
+)
 ,details as 
 (
 SELECT
@@ -56,17 +86,46 @@ SELECT
         	end as is_current_wm_week        	
         --^if the date is in the current wm week, then 1 else 0
         ,case -- take the wm date from a week ago and compare it to the wm date for each row
-        	when max(case when current_date - interval '7 days'= date  then wm_date else null end) over() = wm_date
+        	when max(case when current_date - interval '7 days'= date  then wm_date::integer else null end) over() = wm_date::integer
         	then 1 
         	else 0
         	end  as previous_wm_week
-        ,case -- take the wm date from 4 weeks ago and compare it to every row
-        	when max(case when current_date - interval '28 days' = date then wm_date else null end ) over() <=wm_date
-        		and max(case when current_date = date then wm_date else null end) over() != wm_date
-        		--^disclude the current wm date and only look at the past 4
-        	then 1
-        	else 0
-        	end as is_last_4_weeks
+        ,case
+            when wm_date::integer in (select wm_date from l4_wm_date)
+            and wm_date::integer !=(select wm_date from current_wm_date)
+            then 1
+            else 0
+            end as is_last_4_weeks
+        ,case
+            when wm_date::integer in (select wm_date from l13_wm_date)
+            and wm_date::integer !=(select wm_date from current_wm_date)
+            then 1
+            else 0
+            end as is_last_13_weeks
+        ,case
+            when wm_date::integer in (select wm_date from l52_wm_date)
+            and wm_date::integer !=(select wm_date from current_wm_date)
+            then 1
+            else 0
+            end as is_last_52_weeks
+        ,case
+            when wm_date::integer in (select wm_date -100 from l4_wm_date)
+            and wm_date::integer !=(select wm_date -100 from current_wm_date)
+            then 1
+            else 0
+            end as is_last_4_weeks_ly
+        ,case
+            when wm_date::integer in (select wm_date -100 from l13_wm_date)
+            and wm_date::integer !=(select wm_date -100 from current_wm_date)
+            then 1
+            else 0
+            end as is_last_13_weeks_ly
+        ,case
+            when wm_date::integer in (select wm_date -100 from l52_wm_date)
+            and wm_date::integer !=(select wm_date -100 from current_wm_date)
+            then 1
+            else 0
+            end as is_last_52_weeks_ly
         --finds the wm date before the current week
         ,case -- when the date is today, apply wm date to every row, then compare wm date
         	when max(case when current_date = date then wm_date::integer else null end) over() - 100 = wm_date::integer
@@ -113,6 +172,11 @@ SELECT
     ,current_wm_year
 	,is_ytd_wm_week
 	,max(case when current_date = date then wm_day_of_week else null end) over() as current_wm_day_of_week
+	,is_last_13_weeks
+	,is_last_4_weeks_ly
+	,is_last_13_weeks_ly
+	,is_last_52_weeks
+	,is_last_52_weeks_ly
 FROM details
 where 1=1
 -- and date <=current_date

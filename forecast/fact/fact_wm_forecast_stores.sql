@@ -1,5 +1,5 @@
---table used for the wm forecast sent to us by wm. comparing the store count and actual units and visualizing it in pbi
-
+----table used for the wm forecast sent to us by wm. comparing the store count and actual units and visualizing it in pbi
+--
 create or replace view power_bi.fact_wm_forecast_stores as 
 (
 with ssa as 
@@ -43,7 +43,12 @@ select distinct
     ,fs.previous_units
 	,wcal.wm_date::integer as wm_date
     ,coalesce(ssa.total_pos_units,0) as total_pos
-    ,coalesce(ssa.total_pos_units,0)::numeric(10,2)/ forecast_units::numeric(10,2) as consumption_perc
+    ,case
+    	when forecast_units = 0
+    	then 0
+    	else 
+    coalesce(ssa.total_pos_units,0)::numeric(10,2)/ nullif(forecast_units::numeric(10,2),0) 
+    end as consumption_perc
 	,wcal.id
 	,cbm.cat
 	,cbm.sub_cat
@@ -61,5 +66,6 @@ left join cat_by_model cbm
 on mcl.model = cbm.model
 where 1=1
 and fs.forecast_version_seq = 1
+
 )
 ;

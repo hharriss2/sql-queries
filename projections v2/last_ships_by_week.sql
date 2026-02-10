@@ -1,8 +1,9 @@
 --used to be part of the projected_units_by_week view
---find shte average ships for each model and projects them out by 26 weeks
+--find the average ships for each model and projects them out by 26 weeks
 create or replace view projections.last_ships_by_week as 
 (
-with s as  --ships
+with 
+,s as  --ships
 ( -- find the total units sold by model by wm week
 select
 	model

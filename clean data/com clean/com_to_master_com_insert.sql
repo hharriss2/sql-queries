@@ -14,6 +14,8 @@ with sm as -- ship max
   	,case -- choosing the right model to update
   		when length(cpl.model) <4 -- if new model has 3 or less characters, don't use it
   		then mcl.model
+  		when mcl.model like 'MS%' or mcl.model like 'BH%' or mcl.model like 'VIPRB%'
+  		then coalesce(cpl.model,mcl.model)
   		when latest_ship is null --if the model has never appeared in shipments, choose the old model
   		then coalesce(mcl.model,cpl.model)
   		else coalesce(cpl.model,mcl.model) -- otherwise, we want the newest model to update 

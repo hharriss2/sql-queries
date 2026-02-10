@@ -76,7 +76,7 @@ select
 	as final_on_hand_by_idc -- sum up stores inventory and add it to the warehouse number
 		--on PBI, this should be able to group by Item #, IDC, final OH & be unique rows.
     ,cbm.cbm_id
-    ,sfc.forecast_quantity/4 as store_forecast_quantity -- l4W divided by 4 to give per week forecast
+    ,sfc.forecast_quantity/13 as store_forecast_quantity -- l4W divided by 4 to give per week forecast
     ,traited_store_count_this_year
 from sa
 left join wh --warehouse joins on wm#, RDC, and IDC

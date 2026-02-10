@@ -1,41 +1,21 @@
---adds and updates dsv orders into the retail_link_pos table (main ecommerce table)
-/*
-old wm catalog. let's try to use the components version. 
- WITH wc AS 
- ( -- walmart catalog
-SELECT 
-    wm_catalog_3p.item_id
-    ,wm_catalog_3p.model
-    ,wm_catalog_3p.product_name
-    ,wm_catalog_3p.upc
-    ,wm_catalog_3p.inserted_at
-FROM clean_data.wm_catalog_3p
-)
-, wcmax AS 
-(
-SELECT 
-    wc.model
-    ,max(wc.inserted_at) AS date_compare
-FROM wc
-GROUP BY wc.model
-), wcf AS 
-(
-SELECT 
-    wc.item_id
-    ,wc.model
-    ,wc.upc
-    ,wc.product_name
-FROM wc
-JOIN wcmax 
-ON wc.inserted_at = wcmax.date_compare AND wc.model = wcmax.model
-)
- */
+
 create or replace view dapl_raw.dsv_orders_3p_insert_pos_view as 
 (
-with wcf as 
+with wcf1 as 
 (
-select * 
-from components.wm_catalog_3p
+select
+product_name
+,item_id
+,model
+,row_number () over (partition by model order by retailer_type_id desc) as model_seq
+from clean_data.master_com_list
+
+)
+,wcf as 
+(
+select *
+from wcf1
+where model_seq = 1
 )
 , wcal AS 
 (
@@ -51,7 +31,6 @@ FROM power_bi.wm_calendar_view
  SELECT
     dsv.dsv_order_id
     ,COALESCE(wcf.item_id, 404::bigint) AS item_id
-    ,wcf.upc
     ,dsv.sku AS model
     ,wcf.product_name
     ,dsv.order_date::date AS sale_date

@@ -1,11 +1,12 @@
 --inserts the dapl raw table into the clean item grouping table
 insert into clean_data.item_grouping 
-	(item_group_key,item_id, model, group_type,funding_amount, suggested_retail, start_date, end_date, updated_on,funding_type)
+	(item_group_key,item_id, model, group_type,group_name,funding_amount, suggested_retail, start_date, end_date, updated_on,funding_type)
 select
 	item_group_key 
 	,item_id
 	,model
 	,group_type
+	,group_name
 	,case
 	when suggested_retail like '%$%'
 	then right(suggested_retail,length(suggested_retail) -1)::numeric(10,2)

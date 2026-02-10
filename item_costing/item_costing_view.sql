@@ -16,6 +16,8 @@ where retailer_name = 'Walmart DHF Direct'
 select model
 	,cost_date
 	,count(distinct warehouse_number) as warehouse_count
+	,count(distinct case when warehouse_number::integer in (5,4,41,51,66,8,82,83,84,87,93)
+	then warehouse_number else null end) as non_feed_warehouse_count
 from item_costing.item_costing_tbl_agg
 --where model = '3619013COM'
 group by model, cost_date
@@ -28,13 +30,12 @@ select ic.*
 		then 'model in feed'-- exact match of the feeds
 		when if2 is not null 
 		then 'parent model in feed' -- parent model match on the feeds
-		when ic.warehouse_number::integer in (4,41,51,66,8,82,83,84,87,93)
+		when ic.warehouse_number::integer in (5,4,41,51,66,8,82,83,84,87,93)
 		then 'wh not in feed'--the warehouse number is not in the feed
 		else 'no feed found'--no matched foud on the feed
 		end as feed_type
 		,icw.warehouse_count
---	,row_number() over (partition by parent_model, ic.warehouse_number, cost_date, box_type) as warehouse_count
-	--number of warehouses accounted for in with this parent model
+		,icw.non_feed_warehouse_count
 from item_costing.item_costing_tbl_agg ic
 left join icw
 on ic.model = icw.model
@@ -46,10 +47,11 @@ left join iff if2
 on ic.parent_model = if2.model
 and ic.warehouse_number = if2.warehouse_number
 where 1=1
+-- and ic.warehouse_number !='5'
 )
 ,details_agg as 
 (
-select distinct 
+select distinct
 	model
 	,parent_model
 	,cost_date
@@ -57,50 +59,72 @@ select distinct
 	,is_multi_box_desc
 	,max(material_cost) over (partition by model) as single_material_cost
 	,max(case
-		when feed_type = 'wh not in feed' and warehouse_count = 1
+		when feed_type = 'wh not in feed' and warehouse_count = non_feed_warehouse_count
 		then material_cost
-		when feed_type !='wh not in feed'
+		when feed_type ='no feed found' and warehouse_count = non_feed_warehouse_count
+		then material_cost
+		when feed_type not in('wh not in feed')
 		then material_cost
 		else null
 		end
-		) over (partition by parent_model) as material_cost
+		) over (partition by parent_model, cost_date) as material_cost
 	,max(case
-		when feed_type = 'wh not in feed' and warehouse_count = 1
+		when feed_type = 'wh not in feed' and warehouse_count = non_feed_warehouse_count
 		then freight_cost
-		when feed_type !='wh not in feed'
+		when feed_type ='no feed found' and warehouse_count = non_feed_warehouse_count
+		then freight_cost
+		when feed_type not in('wh not in feed')
 		then freight_cost
 		else null
 		end
-		) over (partition by parent_model) as freight_cost
+		) over (partition by parent_model, cost_date) as freight_cost
 	,max(case
-		when feed_type = 'wh not in feed' and warehouse_count = 1
+		when feed_type = 'wh not in feed' and warehouse_count = non_feed_warehouse_count
 		then duty_cost
-		when feed_type !='wh not in feed'
+		when feed_type ='no feed found' and warehouse_count = non_feed_warehouse_count
+		then duty_cost
+		when feed_type not in('wh not in feed')
 		then duty_cost
 		else null
 		end
-		) over (partition by parent_model) as duty_cost
+		) over (partition by parent_model, cost_date) as duty_cost
 	,max(case
-		when feed_type = 'wh not in feed' and warehouse_count = 1
+		when feed_type = 'wh not in feed' and warehouse_count = non_feed_warehouse_count
 		then overhead_cost
-		when feed_type !='wh not in feed'
+		when feed_type ='no feed found' and warehouse_count = non_feed_warehouse_count
+		then overhead_cost
+		when feed_type not in('wh not in feed')
 		then overhead_cost
 		else null
 		end
-		) over (partition by parent_model) as overhead_cost
+		) over (partition by parent_model, cost_date) as overhead_cost
+	,max(case
+		when feed_type = 'wh not in feed' and warehouse_count = non_feed_warehouse_count
+		then labor_cost
+		when feed_type ='no feed found' and warehouse_count = non_feed_warehouse_count
+		then labor_cost
+		when feed_type not in('wh not in feed')
+		then labor_cost
+		else null
+		end
+		) over (partition by parent_model, cost_date) as labor_cost
 from icfj
---where parent_model = '1000306COM'
+-- where parent_model = '2402884COM'
 order by parent_model,cost_date desc, model
 )
 select * 
 	,material_cost --material + duty + freight
 		+duty_cost
 		+freight_cost
+        +labor_cost
 	as contribution_profit_cost
 	,material_cost
 		+duty_cost
 		+freight_cost
+        +labor_cost
 		+overhead_cost
 	as contribution_profit_cost_overhead
 from details_agg
 )
+;
+

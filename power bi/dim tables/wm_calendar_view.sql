@@ -18,6 +18,14 @@ where date <current_date
 and date!=current_date
 order by wm_date::integer desc limit 5
 )
+,l3_wm_date as 
+(
+select distinct wm_date::integer as wm_date
+from wm_calendar
+where date <current_date
+and date!=current_date
+order by wm_date::integer desc limit 4
+)
 ,l13_wm_date as 
 (
 select distinct wm_date::integer as wm_date
@@ -63,8 +71,6 @@ SELECT
 		when date_part('month',date) <= date_part('month',current_date)
 		and date_part('day',date) <= date_part('day',current_date)
 		then 1
-		when date_part('month',date) <= date_part('month',current_date)
-		then 1 
 		else 0 
 		end as is_ytd_ey --year to date every year
 		,case
@@ -90,12 +96,24 @@ SELECT
         	then 1 
         	else 0
         	end  as previous_wm_week
+        ,case -- find the wm date a week ago, subtract 100 to make it last weeks for last year
+        	when max(case when current_date - interval '7 days'= date  then wm_date::integer -100 else null end) over() 
+        	= wm_date::integer 
+        	then 1 
+        	else 0
+        	end  as previous_wm_week_ly
         ,case
             when wm_date::integer in (select wm_date from l4_wm_date)
             and wm_date::integer !=(select wm_date from current_wm_date)
             then 1
             else 0
             end as is_last_4_weeks
+        ,case
+            when wm_date::integer in (select wm_date from l3_wm_date)
+            and wm_date::integer !=(select wm_date from current_wm_date)
+            then 1
+            else 0
+            end as is_last_3_weeks
         ,case
             when wm_date::integer in (select wm_date from l13_wm_date)
             and wm_date::integer !=(select wm_date from current_wm_date)
@@ -140,10 +158,20 @@ SELECT
 		,case -- boolean for the current wm years year to date by wm week
 			when max( case when current_date = date then wm_year else null end) over() = wm_year
 			and max(case when current_date = date then wm_date::integer else null end) over() >= wm_date::integer
+			and date <=current_date - interval '1 day'
 			then 1 
 			else 0 
 			end as is_ytd_wm_week
+        ,case -- boolean for the ytd last years wm years year to date by wm week
+			when max( case when current_date - interval '1 year' = date then wm_year else null end) over() = wm_year
+			and max(case when current_date - interval '1 year' = date then wm_date::integer else null end) over() >= wm_date::integer
+			and date <=current_date - interval '1 year 1 day'
+
+			then 1 
+			else 0 
+			end as is_ytd_wm_week_ly
 		,max(case when current_date = date then wm_date else null end) over () as current_wm_date
+
 FROM wm_calendar w
 left join wo
 on w.wm_week::integer = wo.wm_week
@@ -177,6 +205,9 @@ SELECT
 	,is_last_13_weeks_ly
 	,is_last_52_weeks
 	,is_last_52_weeks_ly
+	,previous_wm_week_ly
+    ,is_ytd_wm_week_ly
+    ,is_last_3_weeks
 FROM details
 where 1=1
 -- and date <=current_date

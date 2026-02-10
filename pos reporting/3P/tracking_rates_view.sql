@@ -46,4 +46,6 @@ left join lookups.dsv_item_cost_3p ic
 on d.sku = ic.model
 left join mb
 on tr.tracking_number = mb.tracking_number
+where 1=1
+and tr.rate_amount is not null
 )

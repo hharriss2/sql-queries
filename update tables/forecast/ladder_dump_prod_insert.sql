@@ -1,5 +1,5 @@
 --from the data_dump file from kev for the ladder report. this updates the raw data and 
-create view etl_views.ladder_dump_prod_insert as 
+create or replace view etl_views.ladder_dump_prod_insert as 
 (
 
 with ldr as --ladder dump raw
@@ -11,7 +11,7 @@ select distinct
 	,LTRIM(RTRIM(wm_date,'_FCST'),'WK') as wm_date
 	,units
 --	,"Channel_type" as retail_type
-from dapl_raw.ladder_dump
+from dapl_raw.wm_ladder_forecast
 where 1=1
 and "Channel_type" ='WMT.COM'
 )

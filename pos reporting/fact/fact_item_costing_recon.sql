@@ -19,14 +19,30 @@ on dc.division_name = d.division_name
 where 1=1
 
 )
+,cic1 as  -- current item cost step 1
+(-- find the contribution profit cost for the model & the max cost date for the model
+select model
+	,contribution_profit_cost
+	,cost_date
+	,max(cost_date) over (partition by model) as max_cost_date
+from item_costing.item_costing_view
+)
+,cic as --current item cost
+(--find the CP for the most recent cost date 
+select model
+	,max(contribution_profit_cost) as contribution_profit_cost
+from cic1
+where cost_date = max_cost_date
+group by model
+)
 ,rc as --recon costs
 (-- report impliments both recon and costs for the order
 select dr.*
-	,(ic.duty_cost * qty) as duty_cost
-	,(ic.material_cost * qty) as material_cost
-	,(ic.freight_cost * qty) as freight_cost
+	,COALESCE(ic.duty_cost, icp.duty_cost) * dr.qty::numeric AS duty_cost
+	,COALESCE(ic.material_cost, icp.material_cost) * dr.qty::numeric AS material_cost
+	,COALESCE(ic.freight_cost, icp.freight_cost) * dr.qty::numeric AS freight_cost
 --	,(ic.overhead_cost * qty) as overhead_cost
-	,ic.contribution_profit_cost * qty as net_cost
+	,COALESCE(ic.contribution_profit_cost, icp.contribution_profit_cost,cic.contribution_profit_cost) * dr.qty::numeric AS net_cost
 	-- ,ic.contribution_profit_cost_overhead * qty as cogs_overhead
 	,order_total + (commission_amt) - (rate_amount) as cogs
 	,order_total + commission_amt as gross_cogs
@@ -47,6 +63,11 @@ from pos_reporting.dsv_orders_3p_recon dr
 left join item_costing.item_costing_view ic
 on dr.model = ic.model
 and dr.cost_date = ic.cost_date
+LEFT JOIN item_costing.item_costing_parent_view icp 
+ON dr.model = icp.parent_model 
+AND dr.cost_date = icp.cost_date
+left join cic
+on dr.model = cic.model
 left join power_bi.wm_calendar_view wcv
 on dr.order_date = wcv.date
 left join components.dsv_3p_inventory_agg inv
@@ -67,6 +88,7 @@ left join dc
 on dr.model = dc.model
 where 1=1
 and status !='Refund' -- including refunds will throw off %'s
+-- and dc.division_id !=5
 )
 
 ,details as 

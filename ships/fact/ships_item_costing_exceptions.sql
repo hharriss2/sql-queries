@@ -48,7 +48,8 @@ select
 	,freight_cost
 	,cost_date
 	,unit_type
-	,max(cost_date) over() as recent_cost_date
+	,max(cost_date) over() as recent_cost_date -- used later for conditionals when omitting recent records
+	,min(cost_date) over() as earliest_cost_date -- used later for conditionals when ommiting the first record
 from item_costing.item_costing_tbl
 )
 ,si as --ships item
@@ -84,6 +85,7 @@ select
 	,lag(freight_cost) OVER (PARTITION BY sa.model, warehouse ORDER BY month_shipped desc) AS next_freight_cost
 	,lag(warehouse) OVER (PARTITION BY sa.model, warehouse ORDER BY month_shipped desc) AS next_warehouse
 	,recent_cost_date
+	,earliest_cost_date
     ,(material_cost + duty_cost + freight_cost) as cogs
 	,(material_cost + duty_cost + freight_cost) * units as net_cost
     ,case
@@ -100,37 +102,39 @@ and ic.cost_date = sa.month_shipped
 ,sic as --ships item conditionals
 ( --creating conditionals for flagging changes in power bi
 select *
-    ,case
+    ,case -- check to see if material cost changes
         when material_cost != prev_material_cost and prev_material_cost is not null
         then 1
         when material_cost !=next_material_cost and next_material_cost is not null
         then 1
         else 0
         end as is_material_change
-    ,case
+    ,case -- check to see if duty cost changes
         when duty_cost != prev_duty_cost and prev_duty_cost is not null
         then 1
         when duty_cost !=next_duty_cost and next_duty_cost is not null
         then 1
         else 0
         end as is_duty_change 
-    ,case
+    ,case -- check to see if the freight charge changes
         when freight_cost != prev_freight_cost and prev_freight_cost is not null
         then 1
         when freight_cost !=next_freight_cost and next_freight_cost is not null
         then 1
         else 0
         end as is_freight_change 
-    ,case
+    ,case --check for if the coutnry of origin changes
         when origin_country != prev_origin_country and prev_origin_country is not null
         then 1
         when origin_country !=next_origin_country and next_origin_country is not null
         then 1
         else 0
         end as is_origin_change 
-    ,case
+    ,case -- find if the cost is missing from the latest item costing sheet
         when month_shipped = recent_cost_date
         then 0
+		when month_shipped = earliest_cost_date
+		then 0
         when next_warehouse is null
         then 1
         else 0
@@ -177,6 +181,6 @@ select
     end as is_exception_change
     ,has_costing
 from sic
-)
+)--do you want to see non standard deductinos removed or all deductions?
 ;
 

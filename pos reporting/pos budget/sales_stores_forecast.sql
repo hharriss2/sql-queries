@@ -26,7 +26,7 @@ left join cat_by_model cbm
 on tc.cbm_id = cbm.cbm_id
 left join cam
 on cbm.cat = cam.category_name
-where wm_date::integer >=202501 -- has to be in wm year or greater
+where wm_date::integer >=202601 -- has to be in wm year or greater
 group by wm_date::integer, cam.account_manager, category_name,cam.account_manager_id,cam.category_id
 )
 
@@ -40,7 +40,7 @@ select distinct wm_date::integer as wm_week
 from wm_calendar wmc
 left join cam
 on 1=1
-where wm_date::integer >=202501
+where wm_date::integer >=202601
 and wm_date::integer <=202553 -- the last date for forecasting
 order by category_name, wm_week,account_manager_id,category_id
 )

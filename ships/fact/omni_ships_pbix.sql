@@ -25,6 +25,7 @@ SELECT
 	,s.account_manager_id
 	,s.cbm_id
 	,s.group_id_id
+	,s.brand_id
 FROM s
 LEFT JOIN dim_sources.dim_ships_item_id t 
 ON s.tool_id = t.item_id::text

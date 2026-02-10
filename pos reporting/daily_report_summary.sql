@@ -159,14 +159,14 @@ select
 	--Mainstays Expandable TV Stand
 	,sum(
 		case
-		when current_item_num = '667102384'
+		when current_item_num = '675561906'
 		then wtd_units
 		else 0
 		end
 		) as ms_expandable_tv_stand_wtd_units
 	,sum(
 		case
-		when current_item_num = '667102384'
+		when current_item_num = '675561906'
 		then wtd_ly_units
 		else 0
 		end
@@ -219,18 +219,47 @@ select
 	--Fireplace TV Stand Mahogany Oak 668281987
 	,sum(
 		case
-		when current_item_num = '668281987'
+		when current_item_num = '671525918'
 		then wtd_units
 		else 0
 		end
 		) as fireplace_tv_magoak_wtd_units
 	,sum(
 		case
-		when current_item_num = '668281987'
+		when current_item_num = '671525918'
 		then wtd_ly_units
 		else 0
 		end
 		) as fireplace_tv_magoak_wtd_ly_units
+	,sum(
+		case
+		when current_item_num = '674082616'
+		then wtd_units
+		else 0
+		end
+		) as ms_cloud_sofa_cream_wtd_units
+	,sum(
+		case
+		when current_item_num = '674082616'
+		then wtd_ly_units
+		else 0
+		end
+		) as ms_cloud_sofa_cream_wtd_ly_units
+	,sum(
+		case
+		when current_item_num = '673524819'
+		then wtd_units
+		else 0
+		end
+		) as ms_hybrid_mattress_full_ty_units
+	,sum(
+		case
+		when current_item_num = '673524818'
+		then wtd_units
+		else 0
+		end
+		) as ms_hybrid_mattress_queen_ty_units
+		
 from pos_reporting.daily_report
 )
 select
@@ -282,6 +311,11 @@ to_char(ms_steel_chair_black_wtd_units,'FM999,999,999') as ms_steel_chair_black_
 ,to_char(fireplace_tv_magoak_wtd_ly_units,'FM999,999,999') as fireplace_tv_magoak_wtd_ly_units
 ,'harris.jones@dorelusa.com' as email
 ,to_char(current_date,'MM-DD-YYYY') as report_date
+,to_char(ms_cloud_sofa_cream_wtd_units,'FM999,999,999') as ms_cloud_sofa_cream_wtd_units
+,to_char(ms_cloud_sofa_cream_wtd_ly_units,'FM999,999,999') as ms_cloud_sofa_cream_wtd_ly_units
+,to_char(ms_hybrid_mattress_full_ty_units,'FM999,999,999') as ms_hybrid_mattress_full_ty_units
+,to_char(ms_hybrid_mattress_queen_ty_units,'FM999,999,999') as ms_hybrid_mattress_queen_ty_units
 from dc
 )
 ;
+

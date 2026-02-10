@@ -56,6 +56,20 @@ select
 		then pos_sales
 		else null end
 		) as last_week_sales
+	,sum 
+		( -- units for the previous walmart week
+		case
+		when wcal.previous_wm_week_ly = 1
+		then pos_qty
+		else null end
+		) as last_week_units_ly
+	,sum 
+		( -- sales for the previous walmart week
+		case
+		when wcal.previous_wm_week_ly = 1
+		then pos_sales
+		else null end
+		) as last_week_sales_ly
 	,sum
 		( -- sales for the previous 4 walmart weeks, not including the current
 		case
@@ -64,12 +78,83 @@ select
 		else null end 
 		) as last_4_weeks_units
 	,sum
+		( -- sales for the previous 4 walmart weeks, not including the current
+		case
+		when wcal.is_last_4_weeks = 1
+		then pos_sales
+		else null end 
+		) as last_4_weeks_sales
+	,sum
 		( -- sales for the previous 13 walmart weeks, not including the current
 		case
 		when wcal.is_last_13_weeks = 1
 		then pos_qty
 		else null end 
 		) as last_13_weeks_units
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_13_weeks = 1
+		then pos_sales
+		else null end 
+		) as last_13_weeks_sales
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_52_weeks = 1
+		then pos_qty
+		else null end 
+		) as last_52_weeks_units
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_52_weeks = 1
+		then pos_sales
+		else null end 
+		) as last_52_weeks_sales
+--IS LAST X WEEKS LAST YEAR
+	,sum
+		( -- sales for the previous 4 walmart weeks, not including the current
+		case
+		when wcal.is_last_4_weeks_ly = 1
+		then pos_qty
+		else null end 
+		) as last_4_weeks_units_ly
+	,sum
+		( -- sales for the previous 4 walmart weeks, not including the current
+		case
+		when wcal.is_last_4_weeks_ly = 1
+		then pos_sales
+		else null end 
+		) as last_4_weeks_sales_ly
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_13_weeks_ly = 1
+		then pos_qty
+		else null end 
+		) as last_13_weeks_units_ly
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_13_weeks_ly = 1
+		then pos_sales
+		else null end 
+		) as last_13_weeks_sales_ly
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_52_weeks_ly = 1
+		then pos_qty
+		else null end 
+		) as last_52_weeks_units_ly
+	,sum
+		( -- sales for the previous 13 walmart weeks, not including the current
+		case
+		when wcal.is_last_52_weeks_ly = 1
+		then pos_sales
+		else null end 
+		) as last_52_weeks_sales_ly
 --	,-- avg weekly pos qty = l4 weeks divided by 4
 	,sum
 		( -- year to date sales in units
@@ -85,11 +170,97 @@ select
 		then pos_sales
 		else null end
 		) as ytd_sales
+	,sum
+		( -- year to date sales in units
+		case
+		when wcal.is_ytd_wm_week_ly =1
+		then pos_qty
+		else null end
+		) as ytd_units_ly
+	,sum
+		( -- year to date sales in dollar
+		case
+		when wcal.is_ytd_wm_week_ly =1 
+		then pos_sales
+		else null end
+		) as ytd_sales_ly
+	,sum
+		(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_defective_and_overstock_this_year
+		else null end 
+		) as ytd_store_returns_quantity_defective_and_overstock_ytd
+	,sum
+		(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_recall_this_year
+		else null end 
+		) as ytd_store_returns_quantity_recall_ytd
+	,sum
+		(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_dc_this_year
+		else null end 
+		) as ytd_store_returns_quantity_to_dc_ytd
+	,sum
+		(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_return_center_this_year
+		else null end 
+		) as ytd_store_returns_quantity_to_return_center_ytd
+	,sum
+		(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_vendor_this_year
+		else null end 
+		) as ytd_store_returns_quantity_to_vendor_ytd
+	,count   --counts the number of days that have occured for the walmart year.
+		(
+		distinct
+		case
+		when wcal.is_ytd_wm_week = 1
+		then wcal.wm_week
+		else null end
+		) as ytd_num_of_weeks
+	,count(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_defective_and_overstock_this_year
+		else null end
+		) as store_returns_quantity_defective_and_overstock_this_year_ytd
+	,count(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_recall_this_year
+		else null end
+		) as store_returns_quantity_recall_this_year_ytd
+	,count(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_dc_this_year
+		else null end
+		) as store_returns_quantity_to_dc_this_year_ytd
+	,count(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_return_center_this_year
+		else null end
+		) as store_returns_quantity_to_return_center_this_year_ytd
+	,count(
+		case
+		when wcal.is_ytd_wm_week = 1
+		then store_returns_quantity_to_vendor_this_year
+		else null end
+		) as store_returns_quantity_to_vendor_this_year_ytd
     ,mcl.division
     ,cbm.cat
     ,cbm.sub_cat
 from sales_stores_auto ssa
-
 left join power_bi.wm_calendar_view wcal 
 on ssa.daily = wcal.date
 left join pos_reporting.lookup_stores ls
@@ -192,9 +363,9 @@ select
 	--^ ly wtd pos $ % change (current wtd - ly wtd) / ly wtd
 	,store_inventory --inventory in store
 	,wia.warehouse_inventory -- inventory in warehouse
-	,coalesce((store_inventory::numeric(10,2) + warehouse_inventory)/nullif((forecast_n13w)/13,0),0) as weeks_of_supply_inventory_warehouse
+	,coalesce((store_inventory::numeric(10,2) + warehouse_inventory)/nullif((forecast_n13w +last_4_weeks_units)/17,0),0) as weeks_of_supply_inventory_warehouse
 	--(inventory + warehouse) / (next 13 weeks forecast divided by 13)
-	,coalesce(warehouse_on_order::numeric(10,2)/nullif((forecast_n13w)/13,0),0) as weeks_of_supply_on_order
+	,coalesce(warehouse_on_order::numeric(10,2)/nullif((forecast_n13w+last_4_weeks_units)/17,0),0) as weeks_of_supply_on_order
 	--(OO) / (last 4 weeks + next 4 weeks for forecast)
     ,sia.traited_store_count_this_year
 	,sia.traited_store_count_last_year
@@ -229,6 +400,35 @@ select
     ,'Daily Report ' ||current_date::date as file_name
     ,store_on_order
 	,warehouse_on_order
+	,last_13_weeks_units
+	,last_52_weeks_units
+	,last_4_weeks_sales
+	,last_13_weeks_sales
+	,last_52_weeks_sales
+	,last_4_weeks_units_ly
+	,last_13_weeks_units_ly
+	,last_52_weeks_units_ly
+	,last_4_weeks_sales_ly
+	,last_13_weeks_sales_ly
+	,last_52_weeks_sales_ly
+	,wtd_ly_sales/nullif(wtd_ly_units::numeric(10,2),0) as avg_retail_last_year
+	,last_week_sales
+	,last_week_units_ly
+	,last_week_sales_ly
+	,ytd_units_ly
+	,ytd_sales_ly
+	/*START returns per week 
+	counting the number of returns divided by walmart weeks */
+	,ytd_store_returns_quantity_defective_and_overstock_ytd/ nullif(ytd_num_of_weeks::numeric(10,4),0) as ytd_store_returns_quantity_defective_and_overstock_perc
+	,ytd_store_returns_quantity_recall_ytd/ nullif(ytd_num_of_weeks::numeric(10,4),0) as ytd_store_returns_quantity_recall_perc
+	,ytd_store_returns_quantity_to_dc_ytd/ nullif(ytd_num_of_weeks::numeric(10,4),0) as ytd_store_returns_quantity_to_dc_perc
+	,ytd_store_returns_quantity_to_return_center_ytd/ nullif(ytd_num_of_weeks::numeric(10,4),0) as ytd_store_returns_quantity_to_return_center_perc
+	,ytd_store_returns_quantity_to_vendor_ytd/ nullif(ytd_num_of_weeks::numeric(10,4),0) as ytd_store_returns_quantity_to_vendor_perc
+	/*END returns per week */
+	--wtd sales last year / wtd units
+	,cast(last_week_units_ly::numeric(10,2)/nullif(sia.traited_store_count_last_year,0) as numeric(10,2)) as wtd_units_per_traited_store_ly
+    --last weeks units per traited stores 
+    ,cast(last_week_sales_ly/nullif(sia.traited_store_count_last_year,0) as numeric(10,2)) as  wtd_sales_per_traited_store_ly
 from sa
 left join sia
 on sa.current_item_num::bigint = sia.all_links_item_number

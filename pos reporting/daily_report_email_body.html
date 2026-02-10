@@ -1,7 +1,8 @@
+
 <!-- This email body is used to power the daily report on Parabola -->
 <p>Good Morning,</p>
 <p>Please find attached the daily key metrics. Click 
-    <a href="https://nam10.safelinks.protection.outlook.com/?url=https%3A%2F%2Furldefense.com%2Fv3%2F__https%3A%2F%2Ft.parabolamail.com%2Fls%2Fclick%3Fupn%3Du001.3xQZbNT0AzWTEXoG2dXtXy6NO-2F-2F95-2FEsdAbKIPJNOPtzZaMnCXXZ6kLbCqvD8WvbX3PBhuw-2F9-2FYrGZ6eKy3MBtqXHGHVBW3KLus9-2Fl4oPH0adtY2L2ylwpp3YtYeMBptnaLC8eoesfQDQ4q4oFpSZw-3D-3DvBgx_Md-2B6kFxOtP0xhDUfsgoJPsvpuXy-2FOsGjkkyE-2FRBeU6n2cGBxzwcx-2FGg62qY5m3B8OvgGYDdBL4NuCGrKzSB2fcU-2FjjjK-2BtvVzXgkfrDDm4EVDKT4h-2BfFCxBZuoEwxoBYtOv0K7Y4rTvVrwmtagZnbEAkkIBj3KGlhSP-2FxZ7x37vAWOsL2umTIhWwpSjnVj0NjrV8SD8bhzb3qGn7ifQNzqhxyESzImOE0W4Os07W-2Fp8xFTelNIR6F8Fwts7JxPjSMKtgc3jOThzSIy1fIxOnii58f3Bdket3-2FQzRw-2BEFLMD77lrvDAQuhP7a4F0ZXkNHSYH-2Bb3s7a1Is0HlHtJ5F6Q-3D-3D__%3B!!CQSdGC09!gFaK41dH2iR-4MhjsQsz11hXtz1ri5NWZ0dcJ5HRQx8gpTOKX0A72jOhAPsvKT3RAKMqzQGQitvV3iCxZiQ%24&amp;data=05%7C02%7Charris.jones%40dorelusa.com%7Cda57e255e21b4d16cfd708dd3c01480f%7Cbe702899adb04f70a46a8c9219608ab8%7C1%7C0%7C638732698398773656%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&amp;sdata=yDu2Yqrq53tgJz%2F8X%2FKZyEo43bV4QNVDXJDVVk6bG4o%3D&amp;reserved=0">
+    <a href="https://app.powerbi.com/groups/45accaae-acf3-4275-9f7e-9baaf6238a48/reports/d97b0ed3-8c36-45b9-afdd-0ba5857aa74a?ctid=be702899-adb0-4f70-a46a-8c9219608ab8&pbi_source=linkShare">
         here</a> for report details</p>
 <table style="border-collapse: collapse; width: 100%; height: 252px;" border="1">
     <tbody>
@@ -18,13 +19,13 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_steel_chair_black_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_steel_chair_black_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_adj_height_table_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_adj_height_table_wtd_units}}</div>
     </div>
     </td>
     </tr>
@@ -32,13 +33,13 @@
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_steel_chair_black_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_steel_chair_black_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_adj_height_table_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_adj_height_table_wtd_ly_units}}</div>
     </div>
     </td>
     </tr>
@@ -64,13 +65,13 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_resin_chair_white_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_resin_chair_white_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{cosco_3_step_prem_stool_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].cosco_3_step_prem_stool_wtd_units}}</div>
     </div>
     </td>
     </tr>
@@ -78,13 +79,13 @@
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_resin_chair_white_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_resin_chair_white_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{cosco_3_step_prem_stool_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].cosco_3_step_prem_stool_wtd_ly_units}}</div>
     </div>
     </td>
     </tr>
@@ -110,13 +111,13 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_resin_chair_black_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_resin_chair_black_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{cosco_1_step_plastic_stool_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].cosco_1_step_plastic_stool_wtd_units}}</div>
     </div>
     </td>
     </tr>
@@ -124,13 +125,13 @@
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_resin_chair_black_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_resin_chair_black_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{cosco_1_step_plastic_stool_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].cosco_1_step_plastic_stool_wtd_ly_units}}</div>
     </div>
     </td>
     </tr>
@@ -158,26 +159,26 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{parsons_end_tbl_black_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].parsons_end_tbl_black_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_parsons_coffee_table_black_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_parsons_coffee_table_black_wtd_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{parsons_end_tbl_black_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].parsons_end_tbl_black_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_parsons_coffee_table_black_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_parsons_coffee_table_black_wtd_ly_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
@@ -202,26 +203,26 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{parsons_tv_stand_black_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].parsons_tv_stand_black_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_parsons_tv_stand_cw_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_parsons_tv_stand_cw_wtd_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{parsons_tv_stand_black_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].parsons_tv_stand_black_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_parsons_tv_stand_cw_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_parsons_tv_stand_cw_wtd_ly_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
@@ -246,26 +247,26 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_futon_with_usb_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_futon_with_usb_wtd_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_4_door_cabinet_white_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_4_door_cabinet_white_wtd_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_futon_with_usb_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_futon_with_usb_wtd_ly_units}}</div>
     </div>
     </td>
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_4_door_cabinet_white_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_4_door_cabinet_white_wtd_ly_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
@@ -277,32 +278,32 @@
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;"><strong>MS 5PC DINING SET CW</strong></td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
-    <td style="width: 29.7554%; height: 18px;"><strong>Ashton Lane Mag</strong></td>
+    <td style="width: 29.7554%; height: 18px;"><strong>MS CLOUD SOFA</strong></td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;"><strong>Canyon Walnut</strong></td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
-    <td style="width: 29.7554%; height: 18px;"><strong>Fireplace TV Std</strong></td>
+    <td style="width: 29.7554%; height: 18px;"><strong>Cream Linen</strong></td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_5_pc_dining_set_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_5_pc_dining_set_wtd_units}}</div>
     </div></td>
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{fireplace_tv_magoak_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_cloud_sofa_cream_wtd_units}}</div>
     </div></td>
     </tr>
     <tr style="height: 18px;">
     <td style="width: 29.7554%; height: 18px;">LY WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_5_pc_dining_set_wtd_ly_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_5_pc_dining_set_wtd_ly_units}}</div>
     </div></td>
     <td style="width: 29.7554%; height: 18px;">&nbsp;</td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
@@ -329,10 +330,43 @@
     <td style="width: 29.7554%; height: 18px;">WTD QTY:</td>
     <td style="width: 17.38575%; height: 18px;">
     <div>
-    <div>{ms_expandable_tv_stand_wtd_units}</div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_expandable_tv_stand_wtd_units}}</div>
     </div></td>
     <td style="width: 29.7554%; height: 18px;">&nbsp;</td>
     <td style="width: 17.38575%; height: 18px;">&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>&nbsp;</p>
+    <table style="border-collapse: collapse; width: 99.4565%; height: 250px;" border="1">
+    <tbody>
+    <tr style="height: 5px;">
+    <td style="width: 111.141%; text-align: center; height: 5px;" colspan="4"><strong>Notio</strong></td>
+    </tr>
+    <tr style="height: 5px;">
+    <td style="width: 19.7%; height: 5px;"><strong><span data-ogsc="black">MS 8" Hybrid Mattress</span></strong></td>
+    <td style="width: 7.3%; height: 5px;">&nbsp;</td>
+    <td style="width: 19.7%; height: 5px;"><strong><span data-ogsc="black">MS 8" Hybrid Mattress</span></strong></td>
+    <td style="width: 7.3%; height: 5px;">&nbsp;</td>
+    </tr>
+    <tr style="height: 5px;">
+    <td style="width: 19.7%; height: 5px;"><strong>Full</strong></td>
+    <td style="width: 7.3%; height: 5px;">&nbsp;</td>
+    <td style="width: 19.7%; height: 5px;"><strong>Queen</strong></td>
+    <td style="width: 7.3%; height: 5px;">&nbsp;</td>
+    </tr>
+    <tr style="height: 5px;">
+    <td style="width: 19.7%; height: 5px;">WTD QTY:</td>
+    <td style="width: 7.3%; height: 5px;">
+    <div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_hybrid_mattress_full_ty_units}}</div>
+    </div>
+    </td>
+    <td style="width: 19.7%; height: 5px;">WTD QTY:</td>
+    <td style="width: 7.3%; height: 5px;">
+    <div>
+    <div>{{steps.overview_metrics.$return_value[0].ms_hybrid_mattress_queen_ty_units}}</div>
+    </div></td>
     </tr>
     </tbody>
     </table>

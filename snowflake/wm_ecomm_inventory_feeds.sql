@@ -28,9 +28,9 @@ on foi.warehouse_sk = dw.warehouse_sk
 left join dorel_dwh.edw.dim_item di
 on foi.item_sk  = di.item_sk
 where 1=1
-and foi.retailer_name in ('Walmart Stores','Walmart.com') -- want these retailers only
+and foi.retailer_name in ('Walmart Stores','Walmart.com','Walmart DHF Direct') -- want these retailers only
 and archive_flag =0 -- want current records
-and contract_number = 94 --for some reason, this is the current contract
+and contract_number in (94,65109) --for some reason, this is the current contract
 )
 select * 
 from details

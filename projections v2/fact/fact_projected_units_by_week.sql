@@ -51,8 +51,11 @@ select
 		when projected_forecast_type_id = 5 -- subtracting the inventory from sales. if no sales, use the projected units
 		then total_feed
 			-sum(coalesce(stf.units,projected_units)) over (partition by model_name order by p.wm_date)
+		when projected_forecast_type_id = 6
+		then pis.available_to_sell
 		end as matrix_units
 	,projected_forecast_type_id
+	,isv.status_id
 from projections.projected_units_by_week_mat_view p
 left join dim_sources.dim_product_names pn
 on p.product_name = pn.product_name
@@ -74,8 +77,13 @@ and p.wm_date = uf.wm_date
 left join projections.sales_team_forecast stf
 on p.model_name = stf.model
 and p.wm_date = stf.wm_date
+left join inventory.projection_inventory_snapshot pis
+on p.model_name = pis.model
+and p.wm_date = pis.wm_date
 left join projections.inventory_feed_com invf
 on p.model_name = invf.model
+left join lookups.internal_item_status_view isv
+on p.model_name = isv.model
 
 )
 ;

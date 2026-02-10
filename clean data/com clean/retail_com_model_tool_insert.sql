@@ -4,26 +4,26 @@ create or replace view clean_data.retail_com_model_tool_insert as
 (
 with rsmax as 
 (
-select tool_id
+select item_id
 	,max(sale_date) as latest_sale_date
-from pos_reporting.retail_sales
-group by tool_id
+from retail_link_pos
+group by item_id
 )
 ,rs1 as ( --retail sales 1
     --first step in finding a unique tool id and product name combo
 select distinct 
-    tool_id
+    item_id
     ,product_name
     ,sale_date
-from pos_reporting.retail_sales 
+from retail_link_pos
 )
 ,rs as -- retail sales (final) 
 ( -- finds the tool id and the most recent product name for the sale 
-select rsmax.tool_id::bigint as item_id
+select rsmax.item_id as item_id
 	,rs1.product_name
 from rs1
 join rsmax
-on rsmax.tool_id = rs1.tool_id
+on rsmax.item_id = rs1.item_id
 and  rsmax.latest_sale_date = rs1.sale_date
 )
 ,its as  --item scrape (retail scrape)
@@ -53,34 +53,23 @@ and model_name is not null
 )
 ,sm as --ship model
 ( -- model,item id, and division relationship
-select * 
-from clean_data.ships_model_tool_insert
-where item_id_seq =1
-)
-,wc as --walmart catalog
-(
-select distinct
-	item_id::bigint as item_id
-	,ltrim(upc,'0')::bigint as upc_key
-	,product_name
-from wm_catalog
-where 1=1
-and  item_id ~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' -- removing any item id's that aren't # only
-and item_id::bigint not in (select item_id from its) -- don't want to look at items already existing in the scrape data. reduces the data set
-and upc ~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$' 
+select distinct 
+	model
+	,case
+		when item_id !~ '^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$'
+		then null -- if item id does not have a number in the name, then we turn it to null
+        when item_id = '0'
+        then null -- if item id =0, then turn it to null
+		else btrim(item_id,'  ')::bigint 
+		 -- some item id's get entered in with a werid space. this will get rid of so we can convert to a big int data type
+		end as item_id
+	,division_name::varchar as division_name
+	,row_number() over (partition by item_id order by dorel_catalog_id desc) as item_seq
+	--used to find the latest model to item id relationship
+from components.dorel_catalog
+where division_name in (select division_name from components.dorel_catalog where retailer_id !=404)
+and item_id not like '%E+%'
 
-)
-,wcm as --walmart catalog model
-( -- joins together the wm catalog and ships  model on upc
-select 
-wc.item_id
-,sm.model
-,sm.division
-,max(wc.product_name) as product_name
-from wc
-join sm
-on wc.upc_key = sm.upc_key
-group by wc.item_id, sm.model,sm.division
 )
 
 ,mti as -- model tool insert
@@ -91,10 +80,10 @@ select distinct
 	rs.item_id
 --	,its.model_name as retail_scrape_model
 --	,sm.model as ships_model
---	,wcm.mode      l as  walmart_cat_model
-	,coalesce(sm.model,wcm.model,its.model_name) as model_name -- prioritized shipment (our model), wm catalogs, then scrape datas model (possibly a white lable) 
-	,coalesce(sm.division,wcm.division) as division_name
-	,coalesce(its.product_name,wcm.product_name,rs.product_name) as product_name
+--	,wcm.model as  walmart_cat_model
+	,coalesce(sm.model::varchar,its.model_name) as model_name -- prioritized shipment (our model), wm catalogs, then scrape datas model (possibly a white lable) 
+	,sm.division_name
+	,coalesce(its.product_name,rs.product_name) as product_name
     ,case
         when its.product_name is null
         then 0
@@ -105,13 +94,14 @@ left join its
 on rs.item_id =its.item_id
 left join sm
 on rs.item_id = sm.item_id
-left join wcm
-on wcm.item_id = rs.item_id
+where 1=1
+and sm.item_seq = 1
+
 ) -- final final part of the query
 --if com product list has a value but the MTI is null, then we keep master com value 
 select
 	mti.item_id
-	,coalesce(mti.model_name, cpl.model) as model_name
+	,coalesce(mti.model_name::varchar, cpl.model) as model_name
 	,coalesce(mti.division_name, cpl.division) as division_name
 	,case
 		when mti.product_name like '%Dixie%'

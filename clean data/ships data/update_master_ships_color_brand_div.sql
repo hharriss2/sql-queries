@@ -10,6 +10,7 @@ select distinct model
 	,max(item_status_date) over (partition by model) as current_item_status
 	,item_status_date
 from components.dorel_catalog
+where retailer_id !=404
 )
 select *
 from t1

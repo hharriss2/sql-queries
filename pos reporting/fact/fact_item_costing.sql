@@ -38,6 +38,13 @@ where item_status = 'PUBLISHED'
 from components.dorel_catalog
 group by model
 )
+,dl as --disco list
+( -- returns items that are in the discontinued list of products
+select *
+from lookups.internal_item_status_view
+where item_status in 
+('Production - Obsolete','Production - Site Closeout') -- these statuses are considered 'Disco'
+)
 ,details as --one more clause bc postgres doesnt let me call alias names without it 
 ( -- joins to pull in item ids, do some math for break even point
 select
@@ -76,6 +83,11 @@ select
 		else 0
 		end as is_3p_model
 	,dm.model_id
+	,case
+		when dl.model is not null
+		then 1
+		else 0
+		end as is_disco
 from isc
 left join ic
 on ic.model = isc.model
@@ -91,6 +103,8 @@ left join dc
 on ic.model = dc.model
 left join dim_sources.dim_models dm 
 on isc.model = dm.model_name
+left join dl
+on dl.model = isc.model
 )
 --final results. last calc to find estimated commission ( 15% of break even )
 select 
@@ -120,6 +134,7 @@ select
     ,is_multi_box
 	,is_3p_model
 	,model_id
+	,is_disco
 from details
 )
 ;

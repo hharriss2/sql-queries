@@ -25,6 +25,7 @@ SELECT
     ,account_manager_id
     ,is_top_100_item
     ,category_id
+    ,retail_type_assignment
 FROM pos_reporting.wm_com_pos
 )
 , tv AS (
@@ -144,6 +145,7 @@ from power_bi.wm_budget_calendar
         WHEN wmcal.wc_id_ly <= 52 THEN 1
         ELSE 0
     END AS is_l52_ly
+    ,retail_type_assignment
 FROM rs
 LEFT JOIN wmcal ON wmcal.date = rs.sale_date
 LEFT JOIN mv ON rs.model = mv.model_name::text

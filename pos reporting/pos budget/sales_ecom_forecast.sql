@@ -21,7 +21,7 @@ select
 from pos_reporting.wm_com_pos tc -- materialized view needs to be refreshed before using
 left join cam
 on tc.cat = cam.category_name
-where wm_week >=202501 -- earliest week we want to see in the forecast
+where wm_week >=202601 -- earliest week we want to see in the forecast
 group by wm_week, cam.account_manager, cat,cam.account_manager_id,cam.category_id
 )
 ,wmcal as 
@@ -34,8 +34,8 @@ select distinct wm_date::integer as wm_week
 from wm_calendar wmc
 left join  cam
 on 1=1
-where wm_date::integer >=202501
-and wm_date::integer <=202553 -- latest week we want to go through in the forecast
+where wm_date::integer >=202601
+and wm_date::integer <=202653 -- latest week we want to go through in the forecast
 order by category_name, wm_week,account_manager_id,category_id
 )
 ,ws as --weekly sales

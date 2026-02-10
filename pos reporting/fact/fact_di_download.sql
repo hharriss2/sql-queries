@@ -1,5 +1,5 @@
 --report for purchase orders for the di download
-create view power_bi.fact_di_download as 
+create or replace view power_bi.fact_di_download as 
 (
 select
 	po.po_ref_number as po_number
@@ -23,6 +23,8 @@ select
 	,dc.retailer_name
 	,dc.retailer_type
 	,dc.sales_type
+    ,msl.division
+    ,dic.sell_price * order_line_quantity as net_sales_amt
 from inventory.sf_purchase_orders po
 left join dim_sources.sf_dim_customer dc
 on po.customer_sk = dc.customer_sk

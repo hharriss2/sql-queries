@@ -43,6 +43,8 @@ SELECT
 		else 0
 		end as is_l12 -- boolean to show if is last 12 for units sold
   ,s.warehouse
+  ,msl.brand_name
+  ,bn.brand_id
 FROM ships_schema.ships s
 left join divisions d
 on s.division = d.division_name
@@ -52,6 +54,8 @@ left join sale_type st
 on s.sale_type = st.sale_type
 LEFT JOIN clean_data.master_ships_list msl 
 ON s.model = msl.model
+left join dim_sources.dim_brand_name bn
+on msl.brand_name = bn.brand_name
 left join cat_by_model cbm 
 on s.model = cbm.model
 left join account_manager_cat ac

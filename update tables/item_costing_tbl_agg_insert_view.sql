@@ -137,6 +137,7 @@ select distinct
 ,ic.freight_cost
 ,ic.duty_cost
 ,ic.total_overhead_cost as overhead_cost
+,ic.labor_cost
 ,max(bf.box_type)  over (partition by parent_model) as box_type
 ,max(is_multi_box_desc) over (partition by parent_model) as is_multi_box_desc
 from item_costing.item_costing_tbl ic
@@ -160,12 +161,13 @@ select
 	,sum(duty_cost) over (partition by parent_model, warehouse_number, cost_date, box_type) as duty_cost
 	,sum(freight_cost) over (partition by parent_model, warehouse_number, cost_date, box_type) as freight_cost
 	,sum(overhead_cost) over (partition by parent_model, warehouse_number, cost_date, box_type) as overhead_cost
+    ,sum(labor_cost) over (partition by parent_model, warehouse_number, cost_date, box_type) as labor_cost
 from details
 order by parent_model,cost_date desc, warehouse_number, model
 )
 ;
 truncate item_costing.item_costing_tbl_agg;
 insert into item_costing.item_costing_tbl_agg
-(model, parent_model, cost_date,warehouse_number, box_type, is_multi_box_desc, single_material_cost,material_cost,duty_cost,freight_cost,overhead_cost)
-select model, parent_model, cost_date,warehouse_number, box_type, is_multi_box_desc, single_material_cost,material_cost,duty_cost,freight_cost,overhead_cost
+(model, parent_model, cost_date,warehouse_number, box_type, is_multi_box_desc, single_material_cost,material_cost,duty_cost,freight_cost,overhead_cost,labor_cost)
+select model, parent_model, cost_date,warehouse_number, box_type, is_multi_box_desc, single_material_cost,material_cost,duty_cost,freight_cost,overhead_cost,labor_cost
 from etl_views.item_costing_tbl_agg_insert_view

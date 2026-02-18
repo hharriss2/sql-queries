@@ -44,7 +44,7 @@ select
     ,current_month_2026_budget_sales
     --mtd calc
         ---- since it's full month, take (MTD * day # we're on)/ (days in month)
-    ,(current_month_2026_budget_sales * date_part('day',current_date())  ) 
+    ,(current_month_2026_budget_sales * date_part('day',current_date() - interval '1 day')  ) 
         / total_days_in_month
         as mtd_2026_budget_sales
     --previous YTD excluded the current month. adding the MTD here

@@ -5,6 +5,7 @@ with t1 as  -- non aggregated shipment data.
 ( --union the historical shipment source to the new one
 select
     order_id as ship_id
+    ,model
     ,date_shipped
     ,retailer
     ,sale_type
@@ -18,6 +19,7 @@ from walmart.core.ships_jde
 union all
 select
     fact_sk as ship_id
+    ,model
     ,date_shipped
     ,retailer
     ,sale_type
@@ -31,6 +33,7 @@ from walmart.core.ships_dhf
 )
 select  
     ship_id
+    ,model
     ,date_shipped
     ,retailer
     ,sale_type

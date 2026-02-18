@@ -40,6 +40,7 @@ select
     ships_id -- unqiue identifier for shipments. fact sk on DH side, order number + line number on JDE side
     ,su.model
     ,cbm.cbm_id -- dim for model, cat , sub cat, and department
+    ,cbm.group_id_id -- dim for walmart group id's. Used for omni ships reporting
     ,product_name_id -- dim for product names
     ,date_shipped -- date value in case of front end needs
     ,dcal.cal_id -- another date value with more robust columns

@@ -1,3 +1,4 @@
+--finds purchase orders for factories. not that relevant. Customer purchase orders fact table is what is used on DHF shipment table
 create or replace view walmart.power_bi.fact_purchase_orders_current as 
 (
 select

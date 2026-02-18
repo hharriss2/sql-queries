@@ -1,4 +1,4 @@
---holding onto for a sec. 
+--stopped using feb 10 2026. budget table is now broken out by day instead of month
 create or replace view walmart.power_bi.fact_budget_dhf as 
 (
 with details as 

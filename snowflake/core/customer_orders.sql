@@ -18,9 +18,12 @@ select
     ,coalesce(mrl.hf_customer,cm.customername) as customer_name -- priority takes dhf name, then juv is no name availabke
     ,oo.litm_identifier2nditem as model_number -- model number
     ,cbm.division_name -- division
+    ,cbm.cbm_id
     ,dw.warehouse_number -- warehouse
     ,dw.warehouse_name -- warehouse name
+    ,dw.warehouse_id
     ,dcto_ordertype_desc1 order_type
+    ,cbm.product_name
     ,lttr_statuscodelast_desc1 as last_status_code -- the current status code
     ,nxtr_statuscodenext_desc1 as next_status_code -- the status code we expect for an item to be in next
     --^ when next status code gets to 620, it gets to be shipped

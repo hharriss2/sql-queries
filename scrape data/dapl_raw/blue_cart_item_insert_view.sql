@@ -76,11 +76,13 @@ item_id
 	 cast(to_date
 	(
 	split_part(
-		split_part(shipping_message,', ',3)
-		,' to',1) || ' 2024'
+		split_part(
+			split_part(shipping_message,', ',3)
+			,' to',1)
+		,' -',1	)	
+		 || ' '||date_part('year',inserted_at::date)::text
 	,'MON DD YYYY') as date)
-	end 
-    as shipping_date
+	end as shipping_date
 	,inserted_at::date
     as date_inserted
     ,inserted_at
